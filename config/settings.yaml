@@ -19,31 +19,31 @@ adk:
 agents:
   data_processor:
     name: "数据预处理Agent"
-    model: "gpt-5"
+    model: "gpt-5-chat-0807-global"
     temperature: 0.3
     max_tokens: 2000
 
   strategy_planner:
     name: "续写策略Agent"
-    model: "gpt-5"
+    model: "gpt-5-chat-0807-global"
     temperature: 0.7
     max_tokens: 4000
 
   content_generator:
     name: "内容生成Agent"
-    model: "gpt-5"
+    model: "gpt-5-chat-0807-global"
     temperature: 0.8
     max_tokens: 8000
 
   quality_checker:
     name: "质量校验Agent"
-    model: "gpt-5"
+    model: "gpt-5-chat-0807-global"
     temperature: 0.4
     max_tokens: 3000
 
   user_interface:
     name: "用户交互Agent"
-    model: "gpt-5"
+    model: "gpt-5-chat-0807-global"
     temperature: 0.6
     max_tokens: 2000
 
@@ -57,7 +57,7 @@ data:
 # 模型配置
 model:
   type: "openai"
-  model_name: "gpt-5"
+  model_name: "gpt-5-chat-0807-global"
   max_length: 100000
   temperature: 0.8
   top_p: 0.9
