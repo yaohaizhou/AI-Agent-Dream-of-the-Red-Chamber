@@ -1,0 +1,93 @@
+# AI续写红楼梦 - 配置文件
+
+# 项目基本信息
+project:
+  name: "AI续写红楼梦"
+  version: "1.0.0"
+  description: "基于Google ADK的多Agent架构AI续写红楼梦项目"
+
+# Google ADK配置
+adk:
+  enabled: true
+  model_provider: "openai"
+  base_url: "YOUR_GPT5_BASE_URL"  # 请替换为你的GPT-5 API地址
+  api_key: "YOUR_API_KEY"         # 请替换为你的API密钥
+  context_window: 100000          # 100k tokens上下文窗口
+
+# Agent配置
+agents:
+  data_processor:
+    name: "数据预处理Agent"
+    model: "gpt-5"
+    temperature: 0.3
+    max_tokens: 2000
+
+  strategy_planner:
+    name: "续写策略Agent"
+    model: "gpt-5"
+    temperature: 0.7
+    max_tokens: 4000
+
+  content_generator:
+    name: "内容生成Agent"
+    model: "gpt-5"
+    temperature: 0.8
+    max_tokens: 8000
+
+  quality_checker:
+    name: "质量校验Agent"
+    model: "gpt-5"
+    temperature: 0.4
+    max_tokens: 3000
+
+  user_interface:
+    name: "用户交互Agent"
+    model: "gpt-5"
+    temperature: 0.6
+    max_tokens: 2000
+
+# 数据配置
+data:
+  source_file: "data/raw/hongloumeng_80.md"
+  processed_dir: "data/processed"
+  knowledge_base: "data/knowledge_base.db"
+  encoding: "utf-8"
+
+# 模型配置
+model:
+  type: "openai"
+  model_name: "gpt-5"
+  max_length: 100000
+  temperature: 0.8
+  top_p: 0.9
+  frequency_penalty: 0.1
+  presence_penalty: 0.1
+
+# 生成配置
+generation:
+  chapters_to_generate: 40          # 续写40回
+  words_per_chapter: 2500           # 每回约2500字
+  style_similarity_threshold: 0.85
+  literary_requirements: "古风文学风格、文辞优雅、人物性格一致"
+
+# 质量评估配置
+quality:
+  style_weight: 0.3         # 风格一致性权重
+  character_weight: 0.3     # 人物性格权重
+  plot_weight: 0.25        # 情节合理性权重
+  literary_weight: 0.15     # 文学素养权重
+  min_score_threshold: 7.0  # 最低通过分数
+
+# 输出配置
+output:
+  format: "markdown"
+  save_dir: "output"
+  include_metadata: true
+  include_quality_report: true
+
+# 系统配置
+system:
+  debug_mode: false
+  log_level: "INFO"
+  max_retries: 3
+  timeout_seconds: 300
