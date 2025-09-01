@@ -6,12 +6,13 @@ project:
   version: "1.0.0"
   description: "基于Google ADK的多Agent架构AI续写红楼梦项目"
 
+# LLM
+# 请见.env文件
+
 # Google ADK配置
 adk:
   enabled: true
   model_provider: "openai"
-  base_url: "YOUR_GPT5_BASE_URL"  # 请替换为你的GPT-5 API地址
-  api_key: "YOUR_API_KEY"         # 请替换为你的API密钥
   context_window: 100000          # 100k tokens上下文窗口
 
 # Agent配置
