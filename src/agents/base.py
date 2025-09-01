@@ -6,21 +6,9 @@
 """
 
 from abc import ABC, abstractmethod
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 from dataclasses import dataclass
 from datetime import datetime
-
-
-@dataclass
-class AgentMessage:
-    """Agent间通信的消息格式"""
-    message_id: str
-    sender: str
-    receiver: str
-    message_type: str  # request, response, notification
-    payload: Dict[str, Any]
-    timestamp: datetime
-    metadata: Optional[Dict[str, Any]] = None
 
 
 @dataclass
@@ -40,16 +28,59 @@ class BaseAgent(ABC):
         self.config = config or {}
         self.status = "initialized"
         self.last_active = datetime.now()
+        self.communication_bus = None
+        self.feedback_history = []
 
     @abstractmethod
     async def process(self, input_data: Dict[str, Any]) -> AgentResult:
         """处理输入数据的主方法"""
         pass
 
+    def set_communication_bus(self, communication_bus):
+        """设置通信总线"""
+        self.communication_bus = communication_bus
+        if communication_bus:
+            communication_bus.register_agent(self.name)
+
+    async def send_feedback(self, to_agent: str, feedback: Dict[str, Any]):
+        """发送反馈给其他Agent"""
+        if self.communication_bus:
+            await self.communication_bus.send_feedback(self.name, to_agent, feedback)
+
+    async def request_revision(self, to_agent: str, revision_request: Dict[str, Any]):
+        """请求其他Agent修订"""
+        if self.communication_bus:
+            await self.communication_bus.request_revision(self.name, to_agent, revision_request)
+
+    async def send_quality_alert(self, quality_issues: Dict[str, Any]):
+        """发送质量警报"""
+        if self.communication_bus:
+            await self.communication_bus.send_quality_alert(self.name, quality_issues)
+
+    async def get_feedback_messages(self):
+        """获取反馈消息"""
+        if self.communication_bus:
+            messages = await self.communication_bus.get_messages_for_agent(self.name)
+            self.feedback_history.extend(messages)
+            return messages
+        return []
+
     def update_status(self, status: str):
         """更新Agent状态"""
         self.status = status
         self.last_active = datetime.now()
+        
+        # 广播状态更新
+        if self.communication_bus:
+            import asyncio
+            try:
+                loop = asyncio.get_event_loop()
+                if loop.is_running():
+                    asyncio.create_task(self.communication_bus.broadcast_status_update(
+                        self.name, {"status": status, "timestamp": self.last_active.isoformat()}
+                    ))
+            except:
+                pass  # 如果无法获取事件循环，忽略状态广播
 
     def get_status(self) -> Dict[str, Any]:
         """获取Agent状态"""
@@ -57,7 +88,8 @@ class BaseAgent(ABC):
             "name": self.name,
             "status": self.status,
             "last_active": self.last_active.isoformat(),
-            "config": self.config
+            "config": self.config,
+            "feedback_count": len(self.feedback_history)
         }
 
     def validate_input(self, input_data: Dict[str, Any]) -> bool:

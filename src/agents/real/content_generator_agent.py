@@ -57,6 +57,16 @@ class ContentGeneratorAgent(BaseAgent):
             print("🎨 [DEBUG] ContentGeneratorAgent 开始处理")
             print(f"🎨 [DEBUG] 输入数据: {input_data}")
 
+            # 检查是否有反馈消息需要处理
+            feedback_messages = await self.get_feedback_messages()
+            improvement_context = self._process_feedback_messages(feedback_messages)
+            
+            # 检查是否是改进请求
+            is_improvement = input_data.get("improvement_suggestions") or input_data.get("quality_feedback")
+            if is_improvement:
+                print("🔄 [DEBUG] 检测到改进请求，将基于反馈优化内容")
+                return await self._generate_improved_content(input_data, improvement_context)
+
             strategy_data = input_data.get("strategy", {})
             chapters_to_generate = input_data.get("chapters", 40)
 
@@ -322,6 +332,212 @@ class ContentGeneratorAgent(BaseAgent):
         # 调整内容长度和结构
 
         return content
+
+    def _process_feedback_messages(self, feedback_messages: List) -> Dict[str, Any]:
+        """处理反馈消息"""
+        improvement_context = {
+            "quality_issues": [],
+            "suggestions": [],
+            "target_score": 7.0
+        }
+        
+        for message in feedback_messages:
+            if message.message_type.value == "feedback":
+                content = message.content
+                if content.get("type") == "improvement_request":
+                    improvement_context["quality_issues"].extend(
+                        content.get("quality_issues", {}).items()
+                    )
+                    improvement_context["suggestions"].extend(
+                        content.get("suggestions", [])
+                    )
+                    improvement_context["target_score"] = content.get("target_score", 7.0)
+        
+        return improvement_context
+
+    async def _generate_improved_content(self, input_data: Dict[str, Any], improvement_context: Dict[str, Any]) -> AgentResult:
+        """基于反馈生成改进内容"""
+        print("🔄 [DEBUG] 开始基于反馈生成改进内容")
+        
+        try:
+            # 获取之前的内容
+            previous_content = input_data.get("previous_content", {})
+            quality_feedback = input_data.get("quality_feedback", {})
+            suggestions = input_data.get("improvement_suggestions", [])
+            
+            print(f"🔄 [DEBUG] 改进建议数量: {len(suggestions)}")
+            print(f"🔄 [DEBUG] 质量反馈: {quality_feedback}")
+            
+            # 构建改进提示
+            improvement_prompt = self._build_improvement_prompt(
+                suggestions, 
+                quality_feedback.get("detailed_scores", {}),
+                previous_content
+            )
+            
+            # 重新生成内容
+            if previous_content.get("chapters"):
+                improved_chapters = []
+                
+                for i, chapter in enumerate(previous_content["chapters"]):
+                    print(f"🔄 [DEBUG] 改进第 {i+1} 章")
+                    
+                    # 为每个章节生成改进版本
+                    improved_chapter = await self._improve_chapter_content(
+                        chapter, 
+                        improvement_prompt,
+                        input_data.get("strategy", {}),
+                        input_data.get("knowledge_base", {})
+                    )
+                    
+                    improved_chapters.append(improved_chapter)
+                
+                result_data = {
+                    "chapters": improved_chapters,
+                    "total_chapters": len(improved_chapters),
+                    "improvement_applied": True,
+                    "improvement_iteration": input_data.get("iteration", 1),
+                    "generation_stats": {
+                        "success_rate": 1.0,
+                        "average_length": sum(len(c) for c in improved_chapters) / len(improved_chapters) if improved_chapters else 0,
+                        "total_words": sum(len(c) for c in improved_chapters)
+                    }
+                }
+                
+                print(f"🔄 [DEBUG] 改进完成，生成 {len(improved_chapters)} 个章节")
+                
+                self.update_status("completed")
+                return AgentResult(
+                    success=True,
+                    data=result_data,
+                    message=f"基于反馈成功改进内容，共{len(improved_chapters)}章"
+                )
+            
+            else:
+                # 如果没有之前的内容，按正常流程生成
+                return await self._generate_normal_content(input_data)
+                
+        except Exception as e:
+            print(f"🔄 [DEBUG] 改进内容生成失败: {e}")
+            import traceback
+            print(f"🔄 [DEBUG] 错误详情:\n{traceback.format_exc()}")
+            
+            self.update_status("error")
+            return AgentResult(
+                success=False,
+                data=None,
+                message=f"改进内容生成失败: {str(e)}"
+            )
+
+    async def _improve_chapter_content(self, original_chapter: str, improvement_prompt: str, 
+                                     strategy_data: Dict[str, Any], knowledge_base: Dict[str, Any]) -> str:
+        """改进单个章节内容"""
+        try:
+            # 构建改进提示
+            prompt = f"""
+{improvement_prompt}
+
+原始章节内容：
+{original_chapter}
+
+请基于以上改进建议，重新创作这个章节，要求：
+1. 保持故事情节的连贯性
+2. 提升文学质量和古典韵味
+3. 增强人物性格的表现
+4. 优化语言表达和修辞手法
+5. 确保与《红楼梦》原著风格一致
+
+请生成改进后的章节内容：
+"""
+            
+            # 调用GPT生成改进内容
+            response = await self.gpt5_client.generate_content(
+                prompt=prompt,
+                system_message=self.prompts.get_template("content_generator").system_message,
+                temperature=0.7,
+                max_tokens=4000
+            )
+            
+            if response.get("success"):
+                improved_content = response.get("content", "")
+                print(f"🔄 [DEBUG] 章节改进成功，长度: {len(improved_content)}")
+                return improved_content
+            else:
+                print(f"🔄 [DEBUG] 章节改进失败，保持原内容")
+                return original_chapter
+                
+        except Exception as e:
+            print(f"🔄 [DEBUG] 章节改进异常: {e}")
+            return original_chapter
+
+    def _build_improvement_prompt(self, suggestions: List[str], quality_issues: Dict[str, Any], 
+                                previous_content: Dict[str, Any]) -> str:
+        """构建改进提示"""
+        prompt_parts = ["基于质量评估反馈，请改进以下内容：\n"]
+        
+        if suggestions:
+            prompt_parts.append("### 具体改进建议：")
+            for i, suggestion in enumerate(suggestions, 1):
+                prompt_parts.append(f"{i}. {suggestion}")
+            prompt_parts.append("")
+        
+        if quality_issues:
+            prompt_parts.append("### 需要改进的质量维度：")
+            for dimension, score in quality_issues.items():
+                if isinstance(score, (int, float)) and score < 7.0:
+                    prompt_parts.append(f"- {dimension}: 当前{score}/10，需要提升至7.0以上")
+            prompt_parts.append("")
+        
+        prompt_parts.extend([
+            "### 改进重点：",
+            "1. 增强古典文学韵味和语言雅致度",
+            "2. 深化人物性格刻画和心理描写", 
+            "3. 优化情节逻辑和故事连贯性",
+            "4. 提升修辞手法和文学表现力",
+            "5. 确保与《红楼梦》原著风格高度一致",
+            ""
+        ])
+        
+        return "\n".join(prompt_parts)
+
+    async def _generate_normal_content(self, input_data: Dict[str, Any]) -> AgentResult:
+        """正常内容生成流程"""
+        # 这里调用原来的生成逻辑
+        strategy_data = input_data.get("strategy", {})
+        chapters_to_generate = input_data.get("chapters", 40)
+        plot_outline = strategy_data.get("plot_outline", [])
+        
+        generated_chapters = []
+        
+        for i, chapter_info in enumerate(plot_outline[:chapters_to_generate]):
+            chapter_content = await self._generate_chapter_content(
+                chapter_info,
+                strategy_data,
+                input_data.get("knowledge_base", {})
+            )
+            
+            if chapter_content["success"]:
+                generated_chapters.append(chapter_content["content"])
+            else:
+                fallback_content = self._generate_fallback_content(chapter_info)
+                generated_chapters.append(fallback_content)
+        
+        result_data = {
+            "chapters": generated_chapters,
+            "total_chapters": len(generated_chapters),
+            "generation_stats": {
+                "success_rate": len([c for c in generated_chapters if "error" not in c]) / len(generated_chapters) if generated_chapters else 0,
+                "average_length": sum(len(c) for c in generated_chapters) / len(generated_chapters) if generated_chapters else 0,
+                "total_words": sum(len(c) for c in generated_chapters)
+            }
+        }
+        
+        self.update_status("completed")
+        return AgentResult(
+            success=True,
+            data=result_data,
+            message=f"成功生成{len(generated_chapters)}章续写内容"
+        )
 
     def _add_literary_elements(self, content: str, chapter_info: Dict[str, Any]) -> str:
         """添加文学元素"""

@@ -10,7 +10,7 @@ import sys
 import time
 import click
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Dict, Any
 from rich.console import Console
 from rich.panel import Panel
 from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TimeElapsedColumn
@@ -25,6 +25,7 @@ sys.path.insert(0, str(project_root))
 
 from src.config.settings import Settings
 from src.agents.orchestrator import OrchestratorAgent
+from src.agents.adk_agents_standard import create_hongloumeng_adk_system
 
 console = Console()
 
@@ -34,6 +35,7 @@ class RedChamberCLI:
 
     def __init__(self):
         self.settings = Settings()
+        self.adk_system = create_hongloumeng_adk_system(self.settings)
         self.orchestrator = OrchestratorAgent(self.settings)
 
     def show_welcome(self):
@@ -312,6 +314,161 @@ class RedChamberCLI:
             for i, suggestion in enumerate(suggestions, 1):
                 console.print(f"  {i}. {suggestion}")
 
+    async def run_adk_continuation(self, ending: str, chapters: int = 1, debug: bool = False):
+        """使用Google ADK系统执行续写"""
+        try:
+            console.print(f"\n[bold green]🎭 开始AI续写红楼梦 (Google ADK版本)[/bold green]")
+            console.print(f"[cyan]期望结局:[/cyan] {ending}")
+            console.print(f"[cyan]续写章节:[/cyan] {chapters}回")
+            
+            # 显示Agent状态
+            self.show_adk_standard_agent_status()
+            
+            # 执行ADK续写流程
+            console.print("\n[bold cyan]🚀 启动Google ADK续写流程...[/bold cyan]")
+            
+            result = await self.adk_system.process_continuation_request(ending, chapters)
+            
+            if result.get("success"):
+                console.print("[green]✅ ADK续写流程完成！[/green]")
+                
+                # 显示结果
+                self.show_adk_result(result.get("data", {}))
+                
+                # 保存结果
+                output_dir = self.save_adk_results(result, ending, chapters)
+                console.print(f"\n[green]📁 结果已保存至: {output_dir}[/green]")
+                
+            else:
+                error_msg = result.get("error", "未知错误")
+                console.print(f"[red]❌ ADK续写失败: {error_msg}[/red]")
+                
+        except Exception as e:
+            console.print(f"[red]❌ ADK续写过程中出现错误: {str(e)}[/red]")
+            if debug:
+                console.print_exception()
+            else:
+                console.print("[yellow]💡 提示: 使用 --debug 参数查看详细错误信息[/yellow]")
+
+    def show_adk_standard_agent_status(self):
+        """显示标准ADK Agent状态"""
+        console.print("\n🤖 标准ADK Agent状态监控")
+        
+        # 由于get_agent_status是异步的，我们需要在这里处理
+        try:
+            import asyncio
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                # 如果事件循环正在运行，我们显示基本信息
+                console.print("Agent状态: 正在初始化...")
+            else:
+                status = loop.run_until_complete(self.adk_system.get_agent_status())
+                self._display_agent_status_table(status)
+        except Exception as e:
+            console.print(f"⚠️ 无法获取Agent状态: {e}")
+            console.print("Agent状态: 未知")
+    
+    def _display_agent_status_table(self, status: Dict[str, Any]):
+        """显示Agent状态表格"""
+        table = Table(show_header=True, header_style="bold magenta")
+        table.add_column("Agent", style="dim", width=15)
+        table.add_column("状态", justify="center")
+        table.add_column("模型", style="cyan")
+        table.add_column("会话ID", style="green")
+        
+        table.add_row(
+            status["agent_name"],
+            "✅ 就绪" if status["status"] == "ready" else "❌ 未就绪",
+            status["model"],
+            status["session_id"]
+        )
+        
+        console.print(table)
+
+    def show_adk_result(self, data: Dict[str, Any]):
+        """显示ADK结果"""
+        console.print("\n[bold cyan]📊 Google ADK续写结果[/bold cyan]")
+        
+        # 显示内容信息
+        content_data = data.get("content", {})
+        if content_data:
+            chapters = content_data.get("chapters", [])
+            console.print(f"[green]✅ 成功生成 {len(chapters)} 个章节[/green]")
+            
+            # 显示第一章节预览
+            if chapters:
+                first_chapter = chapters[0][:200] + "..." if len(chapters[0]) > 200 else chapters[0]
+                console.print(f"\n[yellow]📖 第一章节预览:[/yellow]")
+                console.print(f"[dim]{first_chapter}[/dim]")
+        
+        # 显示质量评估
+        quality_data = data.get("quality", {})
+        if quality_data:
+            overall_score = quality_data.get("overall_score", 0)
+            console.print(f"\n[bold]🎯 综合质量评分: {overall_score}/10[/bold]")
+            
+            detailed_scores = quality_data.get("detailed_scores", {})
+            if detailed_scores:
+                console.print("\n[cyan]📈 详细评分:[/cyan]")
+                for dimension, score in detailed_scores.items():
+                    console.print(f"  • {dimension}: {score}/10")
+        
+        # 显示策略信息
+        strategy_data = data.get("strategy", {})
+        if strategy_data:
+            plot_outline = strategy_data.get("plot_outline", [])
+            console.print(f"\n[blue]📋 情节大纲: {len(plot_outline)} 回规划完成[/blue]")
+
+    def save_adk_results(self, result: Dict[str, Any], ending: str, chapters: int) -> str:
+        """保存ADK结果"""
+        from datetime import datetime
+        from pathlib import Path
+        import json
+        
+        # 创建输出目录
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        output_dir = Path(f"output/adk_result_{timestamp}")
+        output_dir.mkdir(parents=True, exist_ok=True)
+        
+        # 保存续写内容
+        data = result.get("data", {})
+        content_data = data.get("content", {})
+        chapters_content = content_data.get("chapters", [])
+        
+        for i, chapter in enumerate(chapters_content, 1):
+            chapter_file = output_dir / f"chapter_{i:03d}.md"
+            with open(chapter_file, 'w', encoding='utf-8') as f:
+                f.write(chapter)
+        
+        # 保存质量报告
+        quality_data = data.get("quality", {})
+        if quality_data:
+            quality_file = output_dir / "quality_report.json"
+            with open(quality_file, 'w', encoding='utf-8') as f:
+                json.dump(quality_data, f, ensure_ascii=False, indent=2)
+        
+        # 保存策略信息
+        strategy_data = data.get("strategy", {})
+        if strategy_data:
+            strategy_file = output_dir / "strategy_outline.json"
+            with open(strategy_file, 'w', encoding='utf-8') as f:
+                json.dump(strategy_data, f, ensure_ascii=False, indent=2)
+        
+        # 保存元数据
+        metadata = {
+            "user_ending": ending,
+            "chapters_requested": chapters,
+            "generation_time": datetime.now().isoformat(),
+            "system": "Google ADK",
+            "model": "gemini-2.0-flash"
+        }
+        
+        metadata_file = output_dir / "metadata.json"
+        with open(metadata_file, 'w', encoding='utf-8') as f:
+            json.dump(metadata, f, ensure_ascii=False, indent=2)
+        
+        return str(output_dir)
+
 
 @click.group()
 @click.version_option(version="1.0.0")
@@ -351,6 +508,36 @@ def continue_story(ending, chapters, quality, output, verbose, debug):
     # 执行续写
     import asyncio
     asyncio.run(cli_app.run_continuation(ending, chapters, quality, debug, verbose))
+
+
+@cli.command()
+@click.argument('ending', required=False)
+@click.option('-c', '--chapters', default=1, help='续写回数')
+@click.option('-d', '--debug', is_flag=True, help='调试模式')
+def continue_story_adk(ending, chapters, debug):
+    """续写红楼梦故事（Google ADK版本）
+    
+    ENDING: 用户理想结局描述
+    """
+    cli_app = RedChamberCLI()
+    cli_app.show_welcome()
+    
+    # 如果没有提供结局参数，进入交互模式
+    if not ending:
+        ending = console.input("[cyan]请输入您期望的红楼梦结局: [/cyan]")
+    
+    # 验证输入
+    is_valid, message = cli_app.validate_input(ending)
+    if not is_valid:
+        console.print(f"[red]❌ {message}[/red]")
+        return
+    
+    console.print(f"[green]✅ {message}[/green]")
+    console.print("[yellow]🚀 使用Google ADK系统进行续写...[/yellow]")
+    
+    # 执行ADK续写
+    import asyncio
+    asyncio.run(cli_app.run_adk_continuation(ending, chapters, debug))
 
 
 @cli.command()

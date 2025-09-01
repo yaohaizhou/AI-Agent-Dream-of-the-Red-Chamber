@@ -1,7 +1,7 @@
 # AI续写红楼梦 - 依赖包列表
 
 # Google ADK框架
-google-adk>=1.0.0
+google-adk>=1.13.0
 
 # OpenAI兼容API客户端 (用于GPT-5)
 openai>=1.0.0

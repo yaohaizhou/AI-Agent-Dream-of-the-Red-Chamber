@@ -15,6 +15,7 @@ from .real.data_processor_agent import DataProcessorAgent
 from .real.strategy_planner_agent import StrategyPlannerAgent
 from .real.content_generator_agent import ContentGeneratorAgent
 from .real.quality_checker_agent import QualityCheckerAgent
+from .communication import get_communication_bus, MessageType
 from ..config.settings import Settings
 
 
@@ -24,6 +25,8 @@ class OrchestratorAgent(BaseAgent):
     def __init__(self, settings: Settings):
         super().__init__("编排Agent", {"coordinator": True})
         self.settings = settings
+        self.communication_bus = get_communication_bus()
+        self.set_communication_bus(self.communication_bus)
         self.agents = self._initialize_agents()
 
     def _initialize_agents(self) -> Dict[str, BaseAgent]:
@@ -33,15 +36,19 @@ class OrchestratorAgent(BaseAgent):
         try:
             # 数据预处理Agent
             agents['data_processor'] = DataProcessorAgent(self.settings)
+            agents['data_processor'].set_communication_bus(self.communication_bus)
 
             # 续写策略Agent
             agents['strategy_planner'] = StrategyPlannerAgent(self.settings)
+            agents['strategy_planner'].set_communication_bus(self.communication_bus)
 
             # 内容生成Agent
             agents['content_generator'] = ContentGeneratorAgent(self.settings)
+            agents['content_generator'].set_communication_bus(self.communication_bus)
 
             # 质量校验Agent
             agents['quality_checker'] = QualityCheckerAgent(self.settings)
+            agents['quality_checker'].set_communication_bus(self.communication_bus)
 
             # 用户交互Agent (暂时使用MockAgent)
             agents['user_interface'] = MockAgent(
@@ -51,6 +58,7 @@ class OrchestratorAgent(BaseAgent):
                     "task": "处理用户输入和输出格式化"
                 }
             )
+            agents['user_interface'].set_communication_bus(self.communication_bus)
 
         except Exception as e:
             print(f"Agent初始化失败，使用MockAgent: {e}")
@@ -172,11 +180,11 @@ class OrchestratorAgent(BaseAgent):
 
             print("✅ [DEBUG] 内容生成完成")
 
-            # 4. 质量评估
-            print("🔍 [DEBUG] 步骤4: 质量评估")
-            quality_result = await self._assess_quality(content_result.data)
+            # 4. 质量评估和迭代优化
+            print("🔍 [DEBUG] 步骤4: 质量评估和迭代优化")
+            content_result, quality_result = await self._iterative_improvement(content_result, input_data)
 
-            print(f"🔍 [DEBUG] 质量评估结果: success={quality_result.success}, message={quality_result.message}")
+            print(f"🔍 [DEBUG] 最终质量评估结果: success={quality_result.success}, message={quality_result.message}")
 
             # 5. 格式化输出
             print("🔍 [DEBUG] 步骤5: 格式化输出")
@@ -375,3 +383,125 @@ class OrchestratorAgent(BaseAgent):
 ### 评估时间
 2025-01-XX 14:30:00
 """)
+
+    async def _iterative_improvement(self, content_result: AgentResult, input_data: Dict[str, Any]) -> tuple[AgentResult, AgentResult]:
+        """迭代改进机制"""
+        max_iterations = 3
+        current_iteration = 0
+        min_score_threshold = self.settings.quality.min_score_threshold
+        
+        print(f"🔄 [DEBUG] 开始迭代优化，最大迭代次数: {max_iterations}, 最低分数要求: {min_score_threshold}")
+        
+        current_content = content_result
+        
+        while current_iteration < max_iterations:
+            print(f"🔄 [DEBUG] 第 {current_iteration + 1} 次质量评估")
+            
+            # 质量评估
+            quality_result = await self._assess_quality(current_content.data)
+            
+            if not quality_result.success:
+                print("❌ [DEBUG] 质量评估失败，停止迭代")
+                break
+                
+            overall_score = quality_result.data.get("overall_score", 0) if quality_result.data else 0
+            print(f"🔍 [DEBUG] 当前质量分数: {overall_score}/{min_score_threshold}")
+            
+            # 如果质量达标，结束迭代
+            if overall_score >= min_score_threshold:
+                print(f"✅ [DEBUG] 质量达标 ({overall_score} >= {min_score_threshold})，结束迭代")
+                return current_content, quality_result
+            
+            # 如果是最后一次迭代，不再重新生成
+            if current_iteration >= max_iterations - 1:
+                print(f"⚠️ [DEBUG] 达到最大迭代次数，当前分数: {overall_score}")
+                break
+            
+            print(f"🔄 [DEBUG] 质量不达标 ({overall_score} < {min_score_threshold})，开始第 {current_iteration + 1} 次改进")
+            
+            # 发送质量警报
+            await self.send_quality_alert({
+                "iteration": current_iteration + 1,
+                "current_score": overall_score,
+                "threshold": min_score_threshold,
+                "quality_issues": quality_result.data.get("detailed_scores", {})
+            })
+            
+            # 基于质量反馈重新生成内容
+            improvement_context = {
+                "previous_content": current_content.data,
+                "quality_feedback": quality_result.data,
+                "improvement_suggestions": quality_result.data.get("suggestions", []),
+                "target_score": min_score_threshold,
+                "iteration": current_iteration + 1,
+                "user_ending": input_data.get("ending", ""),
+                "knowledge_base": input_data.get("knowledge_base", {}),
+                "strategy": input_data.get("strategy", {})
+            }
+            
+            print(f"🔄 [DEBUG] 发送改进请求给内容生成Agent")
+            
+            # 向内容生成Agent发送改进反馈
+            await self.agents['content_generator'].send_feedback(
+                "content_generator",
+                {
+                    "type": "improvement_request",
+                    "quality_issues": quality_result.data.get("detailed_scores", {}),
+                    "suggestions": quality_result.data.get("suggestions", []),
+                    "target_score": min_score_threshold
+                }
+            )
+            
+            # 重新生成内容
+            current_content = await self._generate_content(improvement_context)
+            
+            if not current_content.success:
+                print(f"❌ [DEBUG] 第 {current_iteration + 1} 次内容重新生成失败")
+                break
+                
+            print(f"✅ [DEBUG] 第 {current_iteration + 1} 次内容重新生成完成")
+            current_iteration += 1
+        
+        # 最终质量评估
+        final_quality_result = await self._assess_quality(current_content.data)
+        final_score = final_quality_result.data.get("overall_score", 0) if final_quality_result.data else 0
+        
+        print(f"🏁 [DEBUG] 迭代优化完成，最终分数: {final_score}, 迭代次数: {current_iteration}")
+        
+        return current_content, final_quality_result
+
+    async def _generate_content_with_feedback(self, context: Dict[str, Any]) -> AgentResult:
+        """基于反馈生成改进内容"""
+        print("🔄 [DEBUG] 基于反馈重新生成内容")
+        
+        # 检查是否有改进建议
+        suggestions = context.get("improvement_suggestions", [])
+        quality_issues = context.get("quality_feedback", {}).get("detailed_scores", {})
+        
+        # 构建改进提示
+        improvement_prompt = self._build_improvement_prompt(suggestions, quality_issues)
+        context["improvement_prompt"] = improvement_prompt
+        
+        # 调用内容生成Agent
+        return await self.agents['content_generator'].process(context)
+    
+    def _build_improvement_prompt(self, suggestions: List[str], quality_issues: Dict[str, Any]) -> str:
+        """构建改进提示"""
+        prompt_parts = ["基于以下质量反馈进行改进：\n"]
+        
+        if suggestions:
+            prompt_parts.append("### 改进建议：")
+            for i, suggestion in enumerate(suggestions, 1):
+                prompt_parts.append(f"{i}. {suggestion}")
+            prompt_parts.append("")
+        
+        if quality_issues:
+            prompt_parts.append("### 质量问题：")
+            for dimension, score in quality_issues.items():
+                if isinstance(score, (int, float)) and score < 7.0:
+                    prompt_parts.append(f"- {dimension}: {score}/10 (需要改进)")
+            prompt_parts.append("")
+        
+        prompt_parts.append("请重点关注以上问题，生成更高质量的内容。")
+        
+        return "\n".join(prompt_parts)
