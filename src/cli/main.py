@@ -155,27 +155,55 @@ class RedChamberCLI:
         console.print(panel)
         console.print()
 
-    def show_final_result(self, ending: str, chapters: int, output_dir: str = ""):
+    def show_final_result(self, ending: str, chapters: int, output_dir: str = "", result_data: Optional[Dict[str, Any]] = None):
         """显示最终结果"""
+        # 从实际结果数据中获取信息
+        quality_score = 0.0
+        chapter_highlights = []
+        
+        if result_data:
+            quality_data = result_data.get("quality", {})
+            quality_score = quality_data.get("overall_score", 0.0)
+            
+            # 从策略数据中获取章节亮点
+            strategy_data = result_data.get("strategy", {})
+            plot_outline = strategy_data.get("plot_outline", [])
+            
+            for chapter in plot_outline:
+                chapter_num = chapter.get("chapter_num", "?")
+                title = chapter.get("title", "未定标题")
+                key_events = chapter.get("key_events", [])
+                if key_events:
+                    highlight = f"第{chapter_num}回: {', '.join(key_events[:2])}"  # 取前两个关键事件
+                    chapter_highlights.append(highlight)
+        
+        # 如果没有实际数据，使用默认值
+        if not chapter_highlights:
+            chapter_highlights = [f"第{start_chapter}回: 续写开篇，承接前文"]
+        
         result_text = f"""
 🎉 续写完成！
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📁 输出目录: output/red_chamber_continuation_demo/
+📁 输出目录: {output_dir}
 📊 总回数: {chapters}回
-⭐ 平均质量评分: 8.6/10
-⏱️  总耗时: 模拟完成
+⭐ 平均质量评分: {quality_score:.1f}/10
+⏱️  总耗时: 实际完成
 
 用户结局: {ending}
 
-关键情节亮点:
-├── 第15回: 宝黛重逢，情定终身
-├── 第28回: 贾府遭遇变故，宝玉出家修行
-├── 第35回: 黛玉病逝，宝玉痛不欲生
-└── 第40回: 宝玉返世，贾府终获中兴
+关键情节亮点:"""
+        
+        # 添加章节亮点
+        for i, highlight in enumerate(chapter_highlights):
+            if i == len(chapter_highlights) - 1:
+                result_text += f"\n└── {highlight}"
+            else:
+                result_text += f"\n├── {highlight}"
+        
+        result_text += f"""
 
 建议阅读顺序: 按回目顺序阅读，每日1-2回为宜
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        """.strip()
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"""
 
         panel = Panel(result_text, border_style="green", title="🎊 完成总结")
         console.print(panel)
@@ -218,7 +246,7 @@ class RedChamberCLI:
         # 执行续写流程
         self.run_continuation(ending, chapters, quality_threshold)
 
-    async def run_continuation(self, ending: str, chapters: int, quality_threshold: float, debug: bool = False, verbose: bool = False):
+    async def run_continuation(self, ending: str, start_chapter: int, count: int, quality_threshold: float, debug: bool = False, verbose: bool = False):
         """执行续写流程"""
         try:
             # 显示Agent状态
@@ -227,12 +255,13 @@ class RedChamberCLI:
             console.print("[bold blue]🚀 开始AI续写流程...[/bold blue]")
 
             if verbose:
-                console.print(f"[dim]调试信息: ending='{ending}', chapters={chapters}, quality={quality_threshold}[/dim]")
+                console.print(f"[dim]调试信息: ending='{ending}', start_chapter={start_chapter}, count={count}, quality={quality_threshold}[/dim]")
 
             # 准备输入数据
             input_data = {
                 "ending": ending,
-                "chapters": chapters,
+                "start_chapter": start_chapter,
+                "chapters": count,  # 保持向后兼容，内部仍使用chapters表示续写回数
                 "quality_threshold": quality_threshold
             }
 
@@ -249,7 +278,7 @@ class RedChamberCLI:
             console.print("[bold cyan]📝 正在生成内容...[/bold cyan]")
 
             # 显示进度模拟
-            self.show_progress_simulation(ending, chapters, quality_threshold)
+            self.show_progress_simulation(ending, count, quality_threshold)
 
             console.print("[bold cyan]🔍 正在评估质量...[/bold cyan]")
 
@@ -264,7 +293,7 @@ class RedChamberCLI:
             output_dir = self.orchestrator.save_results(result)
 
             # 显示最终结果
-            self.show_final_result(ending, chapters, output_dir)
+            self.show_final_result(ending, count, output_dir, result.data)
 
             console.print("[green]✅ AI续写完成！[/green]")
 
@@ -314,12 +343,12 @@ class RedChamberCLI:
             for i, suggestion in enumerate(suggestions, 1):
                 console.print(f"  {i}. {suggestion}")
 
-    async def run_adk_continuation(self, ending: str, chapters: int = 1, debug: bool = False):
+    async def run_adk_continuation(self, ending: str, start_chapter: int, count: int, debug: bool = False):
         """使用Google ADK系统执行续写"""
         try:
             console.print(f"\n[bold green]🎭 开始AI续写红楼梦 (Google ADK版本)[/bold green]")
             console.print(f"[cyan]期望结局:[/cyan] {ending}")
-            console.print(f"[cyan]续写章节:[/cyan] {chapters}回")
+            console.print(f"[cyan]续写章节:[/cyan] 从第{start_chapter}回开始，续写{count}回")
             
             # 显示Agent状态
             self.show_adk_standard_agent_status()
@@ -327,7 +356,7 @@ class RedChamberCLI:
             # 执行ADK续写流程
             console.print("\n[bold cyan]🚀 启动Google ADK续写流程...[/bold cyan]")
             
-            result = await self.adk_system.process_continuation_request(ending, chapters)
+            result = await self.adk_system.process_continuation_request(ending, count)
             
             if result.get("success"):
                 console.print("[green]✅ ADK续写流程完成！[/green]")
@@ -336,7 +365,7 @@ class RedChamberCLI:
                 self.show_adk_result(result.get("data", {}))
                 
                 # 保存结果
-                output_dir = self.save_adk_results(result, ending, chapters)
+                output_dir = self.save_adk_results(result, ending, count)
                 console.print(f"\n[green]📁 结果已保存至: {output_dir}[/green]")
                 
             else:
@@ -479,12 +508,13 @@ def cli():
 
 @cli.command()
 @click.argument('ending', required=False)
-@click.option('-c', '--chapters', default=40, help='续写回数')
+@click.option('-s', '--start-chapter', default=81, help='起始回数 (默认从第81回开始)')
+@click.option('-c', '--count', default=1, help='续写回数 (默认续写1回)')
 @click.option('-q', '--quality', default=7.0, help='质量阈值')
 @click.option('-o', '--output', help='输出目录')
 @click.option('-v', '--verbose', is_flag=True, help='详细输出')
 @click.option('-d', '--debug', is_flag=True, help='调试模式')
-def continue_story(ending, chapters, quality, output, verbose, debug):
+def continue_story(ending, start_chapter, count, quality, output, verbose, debug):
     """续写红楼梦故事
 
     ENDING: 用户理想结局描述
@@ -507,14 +537,15 @@ def continue_story(ending, chapters, quality, output, verbose, debug):
 
     # 执行续写
     import asyncio
-    asyncio.run(cli_app.run_continuation(ending, chapters, quality, debug, verbose))
+    asyncio.run(cli_app.run_continuation(ending, start_chapter, count, quality, debug, verbose))
 
 
 @cli.command()
 @click.argument('ending', required=False)
-@click.option('-c', '--chapters', default=1, help='续写回数')
+@click.option('-s', '--start-chapter', default=81, help='起始回数 (默认从第81回开始)')
+@click.option('-c', '--count', default=1, help='续写回数 (默认续写1回)')
 @click.option('-d', '--debug', is_flag=True, help='调试模式')
-def continue_story_adk(ending, chapters, debug):
+def continue_story_adk(ending, start_chapter, count, debug):
     """续写红楼梦故事（Google ADK版本）
     
     ENDING: 用户理想结局描述
@@ -537,7 +568,7 @@ def continue_story_adk(ending, chapters, debug):
     
     # 执行ADK续写
     import asyncio
-    asyncio.run(cli_app.run_adk_continuation(ending, chapters, debug))
+    asyncio.run(cli_app.run_adk_continuation(ending, start_chapter, count, debug))
 
 
 @cli.command()

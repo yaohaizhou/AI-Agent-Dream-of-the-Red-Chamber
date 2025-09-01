@@ -122,13 +122,23 @@ class MockAgent(BaseAgent):
         # 模拟处理时间
         await asyncio.sleep(self.response_delay)
 
-        # 生成模拟结果
-        result_data = {
-            "agent_name": self.name,
-            "processed_at": datetime.now().isoformat(),
-            "input_summary": str(input_data)[:100] + "..." if len(str(input_data)) > 100 else str(input_data),
-            "mock_result": f"这是{self.name}的模拟处理结果"
-        }
+        # 对于用户交互Agent，需要保留原始数据
+        if "用户交互" in self.name:
+            # 保留输入数据，只添加处理信息
+            result_data = input_data.copy()
+            result_data.update({
+                "agent_name": self.name,
+                "processed_at": datetime.now().isoformat(),
+                "processing_info": f"{self.name}格式化完成"
+            })
+        else:
+            # 其他MockAgent生成模拟结果
+            result_data = {
+                "agent_name": self.name,
+                "processed_at": datetime.now().isoformat(),
+                "input_summary": str(input_data)[:100] + "..." if len(str(input_data)) > 100 else str(input_data),
+                "mock_result": f"这是{self.name}的模拟处理结果"
+            }
 
         self.update_status("completed")
 

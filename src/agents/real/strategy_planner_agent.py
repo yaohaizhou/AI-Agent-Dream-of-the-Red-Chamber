@@ -45,8 +45,10 @@ class StrategyPlannerAgent(BaseAgent):
             # 生成续写策略
             strategy = await self._generate_strategy(user_ending, knowledge_base)
 
-            # 设计40回情节大纲
-            plot_outline = await self._design_plot_outline(strategy, user_ending)
+            # 设计情节大纲（根据用户指定的章节数和起始回数）
+            chapters_to_plan = input_data.get("chapters", 40)
+            start_chapter = input_data.get("start_chapter", 81)
+            plot_outline = await self._design_plot_outline(strategy, user_ending, chapters_to_plan, start_chapter)
 
             # 整合策略结果
             strategy_result = {
@@ -255,32 +257,81 @@ class StrategyPlannerAgent(BaseAgent):
             "emotional_arc": ["铺垫", "发展", "高潮", "结局"]
         }
 
-    async def _design_plot_outline(self, strategy: Dict[str, Any], user_ending: str) -> List[Dict[str, Any]]:
-        """设计40回情节大纲"""
+    async def _design_plot_outline(self, strategy: Dict[str, Any], user_ending: str, chapters_count: int = 40, start_chapter: int = 81) -> List[Dict[str, Any]]:
+        """设计情节大纲（根据指定章节数和起始回数）"""
         plot_outline = []
 
-        # 按照阶段划分情节
-        phases = [
-            {"name": "前期铺垫", "chapters": range(81, 91), "focus": "爱情发展"},
-            {"name": "中期冲突", "chapters": range(91, 101), "focus": "考验与磨难"},
-            {"name": "后期高潮", "chapters": range(101, 111), "focus": "爱情圆满"},
-            {"name": "大结局", "chapters": range(111, 121), "focus": "幸福美满"}
-        ]
+        print(f"📋 [DEBUG] 从第{start_chapter}回开始，设计 {chapters_count} 回情节大纲")
 
-        chapter_num = 81
-        for phase in phases:
-            for chapter in phase["chapters"]:
-                plot_outline.append({
-                    "chapter_num": chapter,
-                    "title": f"第{chapter}回 (模拟标题)",
-                    "phase": phase["name"],
-                    "focus": phase["focus"],
-                    "key_events": self._generate_chapter_events(chapter, phase["focus"], user_ending),
-                    "character_development": self._generate_character_development(chapter, phase["focus"]),
-                    "themes": self._generate_chapter_themes(chapter, phase["focus"]),
-                    "word_count_estimate": 2500
-                })
+        if chapters_count == 1:
+            # 只续写一回
+            chapter_titles = {
+                81: "第八十一回 占旺相四美钓游鱼 奉严词两番入家塾",
+                82: "第八十二回 老学究讲义警顽心 病潇湘痴魂惊恶梦",
+                83: "第八十三回 省亲庆元宵开夜宴 赏灯观花放烟火",
+                # 可以继续添加更多回目
+            }
+            
+            title = chapter_titles.get(start_chapter, f"第{start_chapter}回 (待拟标题)")
+            
+            plot_outline.append({
+                "chapter_num": start_chapter,
+                "title": title,
+                "phase": "续写开篇" if start_chapter == 81 else "续写发展",
+                "focus": "承接前文，开启新的故事发展",
+                "key_events": ["宝黛情深", "家族变化", "新的转机"],
+                "character_development": {
+                    "宝玉": "情感更加坚定",
+                    "黛玉": "心境逐渐开朗",
+                    "宝钗": "处境微妙变化"
+                },
+                "themes": ["爱情坚贞", "命运转折", "希望重燃"],
+                "word_count_estimate": 3000
+            })
+        else:
+            # 按照阶段划分情节（适应不同章节数）
+            if chapters_count <= 10:
+                # 短篇续写
+                phases = [
+                    {"name": "情感发展", "ratio": 0.6, "focus": "宝黛爱情发展"},
+                    {"name": "圆满结局", "ratio": 0.4, "focus": "幸福美满"}
+                ]
+            elif chapters_count <= 20:
+                # 中篇续写
+                phases = [
+                    {"name": "前期铺垫", "ratio": 0.4, "focus": "爱情发展"},
+                    {"name": "中期冲突", "ratio": 0.3, "focus": "考验与磨难"},
+                    {"name": "圆满结局", "ratio": 0.3, "focus": "幸福美满"}
+                ]
+            else:
+                # 长篇续写（40回）
+                phases = [
+                    {"name": "前期铺垫", "ratio": 0.25, "focus": "爱情发展"},
+                    {"name": "中期冲突", "ratio": 0.25, "focus": "考验与磨难"},
+                    {"name": "后期高潮", "ratio": 0.25, "focus": "爱情圆满"},
+                    {"name": "大结局", "ratio": 0.25, "focus": "幸福美满"}
+                ]
 
+            chapter_num = start_chapter
+            for phase in phases:
+                phase_chapters = max(1, int(chapters_count * phase["ratio"]))
+                for i in range(phase_chapters):
+                    if chapter_num >= start_chapter + chapters_count:
+                        break
+                    
+                    plot_outline.append({
+                        "chapter_num": chapter_num,
+                        "title": f"第{chapter_num}回 (模拟标题)",
+                        "phase": phase["name"],
+                        "focus": phase["focus"],
+                        "key_events": self._generate_chapter_events(chapter_num, phase["focus"], user_ending),
+                        "character_development": self._generate_character_development(chapter_num, phase["focus"]),
+                        "themes": self._generate_chapter_themes(chapter_num, phase["focus"]),
+                        "word_count_estimate": 2500
+                    })
+                    chapter_num += 1
+
+        print(f"📋 [DEBUG] 生成了 {len(plot_outline)} 回大纲")
         return plot_outline
 
     def _generate_chapter_events(self, chapter_num: int, focus: str, user_ending: str) -> List[str]:

@@ -198,10 +198,19 @@ class OrchestratorAgent(BaseAgent):
 
             self.update_status("completed")
 
+            # 整合所有阶段的数据
+            integrated_data = {
+                "knowledge_base": preprocessing_result.data if preprocessing_result.success else {},
+                "strategy": strategy_result.data if strategy_result.success else {},
+                "content": content_result.data if content_result.success else {},
+                "quality": quality_result.data if quality_result.success else {},
+                "user_interface": final_result.data if final_result.success else {}
+            }
+
             print("✅ [DEBUG] 续写流程全部完成")
             return AgentResult(
                 success=True,
-                data=final_result.data,
+                data=integrated_data,
                 message="续写流程完成"
             )
 
@@ -307,82 +316,199 @@ class OrchestratorAgent(BaseAgent):
         chapters_dir = output_path / "chapters"
         chapters_dir.mkdir(exist_ok=True)
 
-        # 生成模拟的章节内容
-        for i in range(1, 41):  # 40回续写
-            chapter_content = f"""### 第{i+80}回 模拟章节标题
+        # 获取实际生成的章节内容和策略信息
+        content_data = results.data.get("content", {})
+        chapters = content_data.get("chapters", [])
+        
+        # 从策略信息中获取起始章节号
+        strategy_data = results.data.get("strategy", {})
+        plot_outline = strategy_data.get("plot_outline", [])
+        
+        print(f"💾 [DEBUG] 保存 {len(chapters)} 个章节到文件")
+        
+        # 保存实际生成的章节内容
+        for i, chapter_content in enumerate(chapters):
+            # 从策略大纲中获取实际的章节号
+            if i < len(plot_outline):
+                chapter_num = plot_outline[i].get("chapter_num", 81 + i)
+            else:
+                chapter_num = 81 + i  # 默认从第81回开始
+            
+            chapter_file = chapters_dir / f"chapter_{chapter_num:03d}.md"
+            
+            # 格式化章节内容
+            formatted_content = f"""# 第{chapter_num}回
 
-[这里是第{i+80}回的详细内容]
-
-此回主要讲述了...
-
-[续写内容模拟]
+{chapter_content}
 
 ---
 
-*本回由AI续写，保持古典文学风格*
+*本回由AI续写系统生成，保持古典文学风格*
+*生成时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}*
 """
-
-            chapter_file = chapters_dir / f"chapter_{i+80:03d}.md"
+            
             with open(chapter_file, 'w', encoding='utf-8') as f:
-                f.write(chapter_content)
+                f.write(formatted_content)
+            
+            print(f"💾 [DEBUG] 已保存第{chapter_num}回，长度: {len(chapter_content)}")
+        
+        if not chapters:
+            print("⚠️ [DEBUG] 没有找到生成的章节内容，创建占位符文件")
+            # 如果没有实际内容，创建一个占位符
+            placeholder_content = """# 第81回 续写内容
 
-        # 生成策略大纲
+*续写内容生成中...*
+
+---
+
+*本回由AI续写系统生成*
+"""
+            chapter_file = chapters_dir / "chapter_081.md"
+            with open(chapter_file, 'w', encoding='utf-8') as f:
+                f.write(placeholder_content)
+
+        # 生成策略大纲（使用实际的策略数据）
         strategy_file = output_path / "strategy_outline.md"
+        strategy_content = self._generate_strategy_markdown(results.data.get("strategy", {}))
         with open(strategy_file, 'w', encoding='utf-8') as f:
-            f.write("""# 续写策略大纲
+            f.write(strategy_content)
 
-## 总体规划
-基于用户结局"宝玉和黛玉终成眷属，贾府中兴"的续写策略
-
-## 情节架构
-1. **前期铺垫** (81-85回): 宝黛爱情发展
-2. **中期冲突** (86-95回): 家族变故与考验
-3. **后期高潮** (96-105回): 爱情圆满与家族复兴
-4. **大结局** (106-120回): 幸福美满的结局
-
-## 人物发展
-- **贾宝玉**: 从叛逆到成熟
-- **林黛玉**: 从多病到坚强
-- **贾府众人**: 从衰落到复兴
-
-## 主题升华
-- 爱情的纯真与坚贞
-- 家族的兴衰与复兴
-- 生命的意义与价值
-""")
-
-        # 生成质量报告
+        # 生成质量报告（使用实际的质量评估数据）
         quality_file = output_path / "quality_report.md"
+        quality_content = self._generate_quality_markdown(results.data.get("quality", {}))
         with open(quality_file, 'w', encoding='utf-8') as f:
-            f.write("""# 质量评估报告
+            f.write(quality_content)
 
-## 综合评分: 8.6/10 ⭐⭐⭐⭐⭐
+    def _generate_strategy_markdown(self, strategy_data: Dict[str, Any]) -> str:
+        """生成策略大纲的markdown内容"""
+        if not strategy_data:
+            return "# 续写策略大纲\n\n*策略数据生成中...*\n"
+        
+        user_ending = strategy_data.get("user_ending", "未指定结局")
+        compatibility = strategy_data.get("compatibility_check", {})
+        overall_strategy = strategy_data.get("overall_strategy", {})
+        plot_outline = strategy_data.get("plot_outline", [])
+        character_arcs = strategy_data.get("character_arcs", {})
+        theme_development = strategy_data.get("theme_development", {})
+        
+        content = f"""# 续写策略大纲
+
+## 用户期望结局
+{user_ending}
+
+## 兼容性分析
+- **兼容性评分**: {compatibility.get('compatibility_score', 0):.1f}/1.0
+- **兼容性状态**: {'✅ 兼容' if compatibility.get('compatible', False) else '❌ 不兼容'}
+- **分析说明**: {compatibility.get('reason', '未提供分析')}
+
+## 总体策略
+- **创作方法**: {overall_strategy.get('overall_approach', '未指定')}
+- **叙事风格**: {overall_strategy.get('narrative_style', '未指定')}
+- **核心主题**: {', '.join(overall_strategy.get('key_themes', []))}
+- **情感弧线**: {' → '.join(overall_strategy.get('emotional_arc', []))}
+
+## 情节大纲
+"""
+        
+        # 添加章节大纲
+        if plot_outline:
+            for chapter in plot_outline:
+                chapter_num = chapter.get('chapter_num', '?')
+                title = chapter.get('title', '未定标题')
+                phase = chapter.get('phase', '未定阶段')
+                focus = chapter.get('focus', '未定重点')
+                key_events = chapter.get('key_events', [])
+                themes = chapter.get('themes', [])
+                
+                content += f"""
+### {title}
+- **阶段**: {phase}
+- **重点**: {focus}
+- **关键事件**: {', '.join(key_events) if key_events else '待规划'}
+- **主题**: {', '.join(themes) if themes else '待确定'}
+"""
+        else:
+            content += "\n*情节大纲生成中...*\n"
+        
+        # 添加人物发展弧线
+        if character_arcs:
+            content += "\n## 人物发展弧线\n"
+            for character, arc in character_arcs.items():
+                if isinstance(arc, list):
+                    content += f"- **{character}**: {' → '.join(arc)}\n"
+                else:
+                    content += f"- **{character}**: {arc}\n"
+        
+        # 添加主题发展
+        if theme_development:
+            content += "\n## 主题发展\n"
+            for theme, development in theme_development.items():
+                if isinstance(development, list):
+                    content += f"- **{theme}**: {' → '.join(development)}\n"
+                else:
+                    content += f"- **{theme}**: {development}\n"
+        
+        content += f"\n---\n\n*策略生成时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}*\n"
+        
+        return content
+
+    def _generate_quality_markdown(self, quality_data: Dict[str, Any]) -> str:
+        """生成质量报告的markdown内容"""
+        if not quality_data:
+            return "# 质量评估报告\n\n*质量评估数据生成中...*\n"
+        
+        overall_score = quality_data.get("overall_score", 0)
+        dimensions = quality_data.get("dimensions", {})
+        suggestions = quality_data.get("suggestions", [])
+        
+        # 生成星级评分
+        stars = "⭐" * min(5, int(overall_score / 2))
+        
+        content = f"""# 质量评估报告
+
+## 综合评分: {overall_score:.1f}/10 {stars}
 
 ### 维度详情
-- **风格一致性**: 8.5/10
-  - 古风雅致，文辞优美
-  - 符合古典小说语言特点
+"""
+        
+        # 添加各维度评分
+        dimension_names = {
+            "style_consistency": "风格一致性",
+            "character_accuracy": "人物准确性", 
+            "plot_reasonability": "情节合理性",
+            "literary_quality": "文学质量"
+        }
+        
+        for dim_key, score in dimensions.items():
+            dim_name = dimension_names.get(dim_key, dim_key)
+            if isinstance(score, (int, float)):
+                grade = self._get_quality_grade(score)
+                content += f"- **{dim_name}**: {score:.1f}/10 ({grade})\n"
+        
+        # 添加改进建议
+        if suggestions:
+            content += "\n### 改进建议\n"
+            for i, suggestion in enumerate(suggestions, 1):
+                content += f"{i}. {suggestion}\n"
+        else:
+            content += "\n### 改进建议\n*暂无具体建议*\n"
+        
+        content += f"\n### 评估时间\n{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
+        
+        return content
 
-- **人物性格**: 9.0/10
-  - 宝黛形象鲜明，性格发展合理
-  - 符合原著人物设定
-
-- **情节合理性**: 8.2/10
-  - 故事逻辑连贯，与原著呼应
-  - 结局符合人物命运
-
-- **文学素养**: 8.8/10
-  - 修辞丰富，意境深远
-  - 古典文学韵味浓郁
-
-### 改进建议
-1. 建议在第25-30回加强贾府复兴的铺垫
-2. 可适当增加一些古典诗词点缀
-3. 增强人物内心描写深度
-
-### 评估时间
-2025-01-XX 14:30:00
-""")
+    def _get_quality_grade(self, score: float) -> str:
+        """根据分数获取质量等级"""
+        if score >= 9.0:
+            return "优秀"
+        elif score >= 8.0:
+            return "良好"
+        elif score >= 7.0:
+            return "合格"
+        elif score >= 6.0:
+            return "待改进"
+        else:
+            return "需重写"
 
     async def _iterative_improvement(self, content_result: AgentResult, input_data: Dict[str, Any]) -> tuple[AgentResult, AgentResult]:
         """迭代改进机制"""

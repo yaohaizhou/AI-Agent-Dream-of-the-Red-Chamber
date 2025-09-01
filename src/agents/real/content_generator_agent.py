@@ -68,7 +68,7 @@ class ContentGeneratorAgent(BaseAgent):
                 return await self._generate_improved_content(input_data, improvement_context)
 
             strategy_data = input_data.get("strategy", {})
-            chapters_to_generate = input_data.get("chapters", 40)
+            chapters_to_generate = input_data.get("chapters", 81)
 
             print(f"🎨 [DEBUG] 策略数据: {strategy_data}")
             print(f"🎨 [DEBUG] 需要生成章节数: {chapters_to_generate}")
