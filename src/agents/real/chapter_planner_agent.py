@@ -30,6 +30,9 @@ class ChapterPlannerAgent(BaseAgent):
         
         # 添加mock模式开关（用于开发测试）
         self.use_mock = getattr(settings, 'use_mock_chapter_planner', False)
+        
+        # 添加Prompt版本选择（v1=复杂版, v2=简化版）
+        self.prompt_version = getattr(settings, 'chapter_planner_prompt_version', 'v2')
 
     async def process(self, input_data: Dict[str, Any]) -> AgentResult:
         """
@@ -240,10 +243,19 @@ class ChapterPlannerAgent(BaseAgent):
         # 找到相关的剧情线
         related_plotlines = self._get_related_plotlines(chapter_num, global_structure)
 
-        # 构建prompt
-        system_prompt, user_prompt = self.prompts.create_custom_prompt(
-            "chapter_planner_detail",
-            {
+        # 根据prompt版本选择不同的模板
+        prompt_name = f"chapter_planner_detail_{self.prompt_version}" if self.prompt_version == 'v2' else "chapter_planner_detail"
+        
+        # 构建prompt参数（V2版本使用简化参数）
+        if self.prompt_version == 'v2':
+            prompt_params = {
+                "chapter_num": chapter_num,
+                "narrative_phase": narrative_phase,
+                "related_plotlines": self._format_plotlines_simple(related_plotlines),
+                "previous_chapter_summary": self._get_chapter_summary(previous_chapter) if previous_chapter else "第80回的日常场景"
+            }
+        else:
+            prompt_params = {
                 "chapter_num": chapter_num,
                 "narrative_phase": narrative_phase,
                 "related_plotlines": json.dumps(related_plotlines, ensure_ascii=False, indent=2),
@@ -251,6 +263,11 @@ class ChapterPlannerAgent(BaseAgent):
                 "global_context": json.dumps(global_structure.get("narrative_phases", {}), ensure_ascii=False),
                 "knowledge_base": self._extract_relevant_knowledge(knowledge_base, chapter_num)
             }
+        
+        # 构建prompt
+        system_prompt, user_prompt = self.prompts.create_custom_prompt(
+            prompt_name,
+            prompt_params
         )
 
         # 调用GPT-5生成章节详细规划
@@ -541,7 +558,7 @@ class ChapterPlannerAgent(BaseAgent):
         return related
 
     def _get_chapter_summary(self, chapter: Dict[str, Any]) -> str:
-        """获取章节摘要"""
+        """获取章节摘要（兼容V1和V2格式）"""
         if not chapter:
             return "无"
 
@@ -549,10 +566,24 @@ class ChapterPlannerAgent(BaseAgent):
         title = chapter.get("chapter_title", {})
         title_str = f"{title.get('first_part', '')} {title.get('second_part', '')}"
 
-        plot_points = chapter.get("main_plot_points", [])
+        # 兼容V1和V2格式
+        plot_points = chapter.get("main_plot_points", []) or chapter.get("plot_points", [])
         plot_summary = ", ".join([p.get("event", "")[:20] for p in plot_points[:2]])
 
         return f"第{chapter_num}回 {title_str} - {plot_summary}"
+    
+    def _format_plotlines_simple(self, plotlines: list) -> str:
+        """将剧情线列表格式化为简单的文本描述（V2版本用）"""
+        if not plotlines:
+            return "无特定剧情线"
+        
+        lines = []
+        for pl in plotlines[:3]:  # 最多3条
+            name = pl.get("name", "未命名")
+            arc = pl.get("narrative_arc", "")
+            lines.append(f"- {name}: {arc}")
+        
+        return "\n".join(lines)
 
     def _create_default_global_structure(
         self,

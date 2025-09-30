@@ -1,0 +1,249 @@
+{
+  "metadata": {
+    "version": "1.0",
+    "created_at": "2025-09-30T15:52:43.611149",
+    "user_ending": "贾府衰败势如流 往昔繁华化虚无",
+    "total_chapters": 1,
+    "start_chapter": 81,
+    "end_chapter": 81
+  },
+  "global_structure": {
+    "narrative_phases": {
+      "setup": {
+        "chapters": [
+          81
+        ],
+        "description": "开篇承接前八十回，描写贾府表面依旧维持着繁华景象，日常宴游与人际往来如常，却隐约透出财政紧张与人心浮动的征兆，为全局的衰败埋下伏笔。",
+        "emotional_tone": "繁华掩饰下的暗流不安"
+      },
+      "development": {
+        "chapters": [
+          81
+        ],
+        "description": "通过细节刻画宝玉、黛玉与府中其他人物的互动，显现情感关系的微妙变化；与此同时，府务上的漏洞与奢侈耗费被侧面揭示，发展出家道中落的内因。",
+        "emotional_tone": "温情交织着隐忧"
+      },
+      "climax": {
+        "chapters": [
+          81
+        ],
+        "description": "某件表面喜庆的事件（如亲友聚会或寿宴）被突发的财政窘境与人际龃龉打破，情绪在宴席间急转直下，既是家族外表光鲜的破裂点，也是人物内心动荡的焦灼时刻。",
+        "emotional_tone": "喜中见悲、暗潮汹涌"
+      },
+      "resolution": {
+        "chapters": [
+          81
+        ],
+        "description": "以余韵收束本回，宴散人去，留下空旷与冷清的景象，人物各怀心事，暗示后续贾府将不可逆转地走向衰亡，情感上产生淡淡的虚无感。",
+        "emotional_tone": "落幕的怅惘与空寂"
+      }
+    },
+    "major_plotlines": [
+      {
+        "id": "plotline_001",
+        "name": "宝黛情感波澜线",
+        "priority": "primary",
+        "chapters_involved": [
+          81
+        ],
+        "narrative_arc": "在宴席中的相伴→含蓄交流中见隔阂→宴中气氛骤变触发内心波澜→彼此无言收场",
+        "key_turning_points": [
+          {
+            "chapter": 81,
+            "event": "宴席中宝玉与黛玉因言辞误会产生微妙的不快"
+          }
+        ]
+      },
+      {
+        "id": "plotline_002",
+        "name": "贾府财务暗涌线",
+        "priority": "primary",
+        "chapters_involved": [
+          81
+        ],
+        "narrative_arc": "日常开销看似如旧→旁白点出入账减少→宴中突现银两短缺的尴尬→以借支应付，但隐患加深",
+        "key_turning_points": [
+          {
+            "chapter": 81,
+            "event": "总管在宴中低声禀报库银短缺，令氛围受影响"
+          }
+        ]
+      },
+      {
+        "id": "plotline_003",
+        "name": "人物心境觉醒线",
+        "priority": "secondary",
+        "chapters_involved": [
+          81
+        ],
+        "narrative_arc": "似乎沉浸在热闹与旧日回忆→不安的蛛丝马迹渐显→突发事件刺破怀旧→宴后各自沉思命运",
+        "key_turning_points": [
+          {
+            "chapter": 81,
+            "event": "宴后黛玉独处时感叹世事无常，暗藏觉醒之意"
+          }
+        ]
+      }
+    ],
+    "timeline": {
+      "time_span": "第81回所描写的时间跨度为一天内的一个重要聚会，从午前准备至深夜散席。",
+      "key_moments": [
+        {
+          "chapter": 81,
+          "time": "午时",
+          "event": "府中为某长辈举办寿宴，宾客云集"
+        },
+        {
+          "chapter": 81,
+          "time": "傍晚",
+          "event": "宴席间财务短缺的消息传至主事者耳中"
+        },
+        {
+          "chapter": 81,
+          "time": "夜间",
+          "event": "宴散后厅堂空寂，人物各自离去，暗示衰落之势"
+        }
+      ]
+    }
+  },
+  "chapters": [
+    {
+      "chapter_title": {
+        "first_part": "宴席忽惊银漏短",
+        "second_part": "情怀渐觉梦难温"
+      },
+      "main_characters": [
+        {
+          "name": "贾宝玉",
+          "importance": "primary",
+          "emotional_arc": "由温存到隐痛的转变"
+        },
+        {
+          "name": "林黛玉",
+          "importance": "primary",
+          "emotional_arc": "由含笑到黯然的收束"
+        },
+        {
+          "name": "王熙凤",
+          "importance": "secondary",
+          "emotional_arc": "从周旋周到到暗自焦虑"
+        },
+        {
+          "name": "贾母",
+          "importance": "secondary",
+          "emotional_arc": "由欣慰到隐忧的微变"
+        }
+      ],
+      "plot_points": [
+        {
+          "sequence": 1,
+          "event": "贾府设宴，宝黛同席，言语温婉却有微妙隔阂",
+          "location": "贾府大观园正厅",
+          "participants": [
+            "贾宝玉",
+            "林黛玉",
+            "贾母",
+            "王熙凤"
+          ]
+        },
+        {
+          "sequence": 2,
+          "event": "宴中传来厨房银两不足之事，王熙凤急施借支",
+          "location": "贾府后厨与厅间",
+          "participants": [
+            "王熙凤",
+            "贾母",
+            "管事婆子"
+          ]
+        },
+        {
+          "sequence": 3,
+          "event": "宝玉心绪因局促气氛而波动，黛玉默然低首",
+          "location": "宴席旁",
+          "participants": [
+            "贾宝玉",
+            "林黛玉"
+          ]
+        },
+        {
+          "sequence": 4,
+          "event": "宴后人散，各自沉思往事与现实裂隙",
+          "location": "各自院落",
+          "participants": [
+            "贾宝玉",
+            "林黛玉",
+            "王熙凤",
+            "贾母"
+          ]
+        }
+      ],
+      "literary_elements": {
+        "poetry_count": 1,
+        "symbolism": [
+          "宴席缺银象征家业衰微",
+          "灯影散乱寓情感分离"
+        ],
+        "foreshadowing": [
+          "财务窘迫将引发更大风波",
+          "宝黛隔阂逐渐加深"
+        ]
+      },
+      "connections": {
+        "previous": "承接第80回宴席热闹与表面安适",
+        "next": "为第82回财务危机与情感裂痕埋下伏笔"
+      },
+      "chapter_number": 81
+    }
+  ],
+  "character_distribution": {
+    "character_distribution": {
+      "贾宝玉": {
+        "total_appearances": 1,
+        "primary_role_chapters": [
+          81
+        ],
+        "secondary_role_chapters": [],
+        "minor_role_chapters": [],
+        "absent_chapters": []
+      },
+      "林黛玉": {
+        "total_appearances": 1,
+        "primary_role_chapters": [
+          81
+        ],
+        "secondary_role_chapters": [],
+        "minor_role_chapters": [],
+        "absent_chapters": []
+      },
+      "王熙凤": {
+        "total_appearances": 1,
+        "primary_role_chapters": [],
+        "secondary_role_chapters": [
+          81
+        ],
+        "minor_role_chapters": [],
+        "absent_chapters": []
+      },
+      "贾母": {
+        "total_appearances": 1,
+        "primary_role_chapters": [],
+        "secondary_role_chapters": [
+          81
+        ],
+        "minor_role_chapters": [],
+        "absent_chapters": []
+      }
+    },
+    "total_characters": 4,
+    "distribution_balance": 1.0
+  },
+  "validation": {
+    "is_consistent": false,
+    "issues": [
+      "第81回缺少主要情节点"
+    ],
+    "suggestions": [],
+    "total_checks": 5,
+    "passed_checks": 4
+  }
+}

@@ -520,6 +520,74 @@ class LiteraryPrompts:
                 temperature=0.7,
                 max_tokens=4000,
                 description="单章详细规划，设计每一回的具体内容"
+            ),
+            
+            "chapter_planner_detail_v2": PromptTemplate(
+                name="章节设计师V2",
+                system_message="""你是一位精通《红楼梦》的章节设计师。请为每一回设计简洁但完整的内容规划。
+
+核心能力：
+1. 创作对仗工整的回目
+2. 选择合适的主要角色（3-5位）
+3. 设计承上启下的情节点（3-5个）
+4. 融入诗词、象征等文学元素
+
+输出要求：
+- 回目对仗工整，体现主要内容
+- 角色选择合理，情感变化清晰
+- 情节连贯，有起承转合
+- 文学元素点到即止""",
+                user_template="""请为《红楼梦》第{chapter_num}回设计内容规划。
+
+**背景**：
+- 所处阶段：{narrative_phase}
+- 上回概要：{previous_chapter_summary}
+- 相关剧情线：{related_plotlines}
+
+请输出以下JSON格式（必须完整）：
+
+```json
+{{
+  "chapter_title": {{
+    "first_part": "上联7字",
+    "second_part": "下联7字"
+  }},
+  "main_characters": [
+    {{
+      "name": "贾宝玉",
+      "importance": "primary",
+      "emotional_arc": "一句话描述情感变化"
+    }}
+  ],
+  "plot_points": [
+    {{
+      "sequence": 1,
+      "event": "事件描述",
+      "location": "地点",
+      "participants": ["参与者"]
+    }}
+  ],
+  "literary_elements": {{
+    "poetry_count": 1,
+    "symbolism": ["象征"],
+    "foreshadowing": ["伏笔"]
+  }},
+  "connections": {{
+    "previous": "承接上回",
+    "next": "铺垫下回"
+  }}
+}}
+```
+
+**重要**：
+1. 输出纯JSON，不要其他内容
+2. 确保所有括号都正确闭合
+3. poetry_count必须是数字
+4. 字段简洁，一句话说清楚
+5. 主要角色3-5位，情节点3-5个""",
+                temperature=0.7,
+                max_tokens=2000,
+                description="简化版章节规划（V2优化版）"
             )
         }
 

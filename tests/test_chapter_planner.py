@@ -95,18 +95,106 @@ async def test_chapter_planner_mock():
         print(f"  错误: {result.message}")
 
 
-async def test_chapter_planner():
-    """测试ChapterPlannerAgent的基本功能（真实API调用）"""
+async def test_chapter_planner_v2():
+    """测试ChapterPlannerAgent V2版本（简化Prompt，真实API调用）"""
     
     print("=" * 60)
-    print("ChapterPlannerAgent 测试 - 真实API模式")
+    print("ChapterPlannerAgent 测试 - V2简化版（真实API）")
     print("=" * 60)
     
     # 1. 初始化设置和Agent
-    print("\n[1] 初始化ChapterPlannerAgent...")
+    print("\n[1] 初始化ChapterPlannerAgent V2...")
     settings = Settings()
+    settings.chapter_planner_prompt_version = 'v2'  # 使用V2简化Prompt
     agent = ChapterPlannerAgent(settings)
     print(f"✓ Agent已创建: {agent.name}")
+    print(f"  Prompt版本: V2 (简化版)")
+    print(f"  状态: {agent.status}")
+    
+    # 2. 准备测试数据（只测试1回）
+    print("\n[2] 准备测试数据...")
+    input_data = {
+        "user_ending": "贾府衰败势如流 往昔繁华化虚无",
+        "overall_strategy": {
+            "user_ending": "贾府衰败势如流 往昔繁华化虚无",
+            "compatibility_score": 0.95,
+            "narrative_approach": "渐进式发展",
+            "major_themes": ["家族命运", "爱情悲剧", "人性觉醒"]
+        },
+        "knowledge_base": {
+            "characters": {
+                "贾宝玉": {"description": "性格纯真，不喜功名"},
+                "林黛玉": {"description": "聪慧多才，多愁善感"},
+                "薛宝钗": {"description": "端庄贤惠，世故圆滑"}
+            }
+        },
+        "chapters_count": 1,  # 只测试1回
+        "start_chapter": 81
+    }
+    print("✓ 测试数据准备完成")
+    print(f"  测试范围: 仅第81回 (V2简化版)")
+    
+    # 3. 执行章节规划
+    print("\n[3] 执行章节规划 (调用真实API)...")
+    import time
+    start_time = time.time()
+    
+    result = await agent.process(input_data)
+    
+    elapsed = time.time() - start_time
+    print(f"  耗时: {elapsed:.2f}秒")
+    
+    # 4. 检查结果
+    print("\n[4] 检查规划结果...")
+    if result.success:
+        print("✓ 章节规划成功!")
+        chapters_plan = result.data
+        
+        # 显示结果
+        chapter = chapters_plan.get("chapters", [])[0] if chapters_plan.get("chapters") else {}
+        if chapter:
+            title = chapter.get("chapter_title", {})
+            print(f"\n  第81回标题:")
+            print(f"  {title.get('first_part')} / {title.get('second_part')}")
+            
+            characters = chapter.get("main_characters", [])
+            print(f"\n  主要角色({len(characters)}位):")
+            for char in characters[:3]:
+                print(f"  - {char.get('name')} ({char.get('importance')})")
+            
+            plot_points = chapter.get("plot_points", [])
+            print(f"\n  情节点({len(plot_points)}个):")
+            for pp in plot_points[:3]:
+                print(f"  {pp.get('sequence')}. {pp.get('event')[:40]}...")
+        
+        # 保存结果
+        output_file = project_root / "output" / "test_chapters_plan_v2.json"
+        output_file.parent.mkdir(parents=True, exist_ok=True)
+        
+        with open(output_file, 'w', encoding='utf-8') as f:
+            json.dump(chapters_plan, f, ensure_ascii=False, indent=2)
+        
+        print(f"\n✓ V2规划结果已保存到: {output_file}")
+        print("\n✅ V2版本测试通过！")
+    else:
+        print("✗ 章节规划失败!")
+        print(f"  错误: {result.message}")
+
+
+async def test_chapter_planner():
+    """测试ChapterPlannerAgent的基本功能（V1复杂版，真实API调用）"""
+    
+    print("=" * 60)
+    print("ChapterPlannerAgent 测试 - V1复杂版（真实API）")
+    print("=" * 60)
+    
+    # 1. 初始化设置和Agent
+    print("\n[1] 初始化ChapterPlannerAgent V1...")
+    settings = Settings()
+    settings.chapter_planner_prompt_version = 'v1'  # 明确使用V1
+    agent = ChapterPlannerAgent(settings)
+    print(f"✓ Agent已创建: {agent.name}")
+    print(f"  Prompt版本: V1 (复杂版)")
     print(f"  状态: {agent.status}")
     
     # 2. 准备测试数据
@@ -315,7 +403,9 @@ if __name__ == "__main__":
     run_mode = "mock"  # 默认运行mock模式
     
     if len(sys.argv) > 1:
-        if sys.argv[1] in ['--full', '-f', 'full']:
+        if sys.argv[1] in ['--v2', '-v2', 'v2']:
+            run_mode = "v2"
+        elif sys.argv[1] in ['--full', '-f', 'full', 'v1']:
             run_mode = "full"
         elif sys.argv[1] in ['--mock', '-m', 'mock']:
             run_mode = "mock"
@@ -323,8 +413,10 @@ if __name__ == "__main__":
         # 询问运行模式
         print("\n" + "=" * 60)
         try:
-            user_input = input("\n选择测试模式:\n  1. Mock模式 (快速，不调用API) [默认]\n  2. 完整模式 (调用GPT-5 API)\n请选择 [1/2]: ")
+            user_input = input("\n选择测试模式:\n  1. Mock模式 (快速，不调用API) [默认]\n  2. V2简化版 (真实API，1回测试) [推荐]\n  3. V1完整版 (真实API，较慢)\n请选择 [1/2/3]: ")
             if user_input == '2':
+                run_mode = "v2"
+            elif user_input == '3':
                 run_mode = "full"
         except EOFError:
             print("\n检测到非交互式环境，使用Mock模式。")
@@ -332,12 +424,16 @@ if __name__ == "__main__":
     if run_mode == "mock":
         print("\n使用Mock模式测试...")
         asyncio.run(test_chapter_planner_mock())
+    elif run_mode == "v2":
+        print("\n使用V2简化版测试...")
+        asyncio.run(test_chapter_planner_v2())
     else:
-        print("\n使用完整模式测试...")
+        print("\n使用V1完整版测试...")
         asyncio.run(test_chapter_planner())
     
     print("\n" + "=" * 60)
     print("提示:")
-    print("  - Mock模式: python tests/test_chapter_planner.py --mock")
-    print("  - 完整模式: python tests/test_chapter_planner.py --full")
+    print("  - Mock模式:  python tests/test_chapter_planner.py --mock")
+    print("  - V2简化版:  python tests/test_chapter_planner.py --v2  [推荐]")
+    print("  - V1完整版:  python tests/test_chapter_planner.py --full")
     print("=" * 60)
