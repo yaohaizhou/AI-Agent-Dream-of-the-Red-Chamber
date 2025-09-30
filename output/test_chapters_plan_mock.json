@@ -1,0 +1,880 @@
+{
+  "metadata": {
+    "version": "1.0",
+    "created_at": "2025-09-30T15:45:13.718158",
+    "user_ending": "贾府衰败势如流 往昔繁华化虚无",
+    "total_chapters": 10,
+    "start_chapter": 81,
+    "end_chapter": 90
+  },
+  "global_structure": {
+    "narrative_phases": {
+      "setup": {
+        "chapters": [
+          81
+        ],
+        "description": "铺垫阶段：暗流涌动，危机初显"
+      },
+      "development": {
+        "chapters": [
+          82,
+          83,
+          84,
+          85
+        ],
+        "description": "发展阶段：矛盾激化，命运转折"
+      },
+      "climax": {
+        "chapters": [
+          86,
+          87,
+          88
+        ],
+        "description": "高潮阶段：家族崩塌，人物抉择"
+      },
+      "resolution": {
+        "chapters": [
+          89,
+          90
+        ],
+        "description": "结局阶段：尘埃落定，各有归宿"
+      }
+    },
+    "major_plotlines": [
+      {
+        "id": "plotline_001",
+        "name": "宝黛爱情线",
+        "priority": "primary",
+        "chapters_involved": [
+          81,
+          84,
+          87,
+          90
+        ],
+        "narrative_arc": "相思→误会→和解→考验→结局"
+      },
+      {
+        "id": "plotline_002",
+        "name": "贾府衰败线",
+        "priority": "primary",
+        "chapters_involved": [
+          82,
+          86,
+          90
+        ],
+        "narrative_arc": "预兆→危机→崩溃→覆灭"
+      }
+    ]
+  },
+  "chapters": [
+    {
+      "chapter_number": 81,
+      "chapter_title": {
+        "first_part": "暗香疏影探春事",
+        "second_part": "落絮纷纷忆旧情"
+      },
+      "narrative_phase": "setup",
+      "main_characters": [
+        {
+          "name": "贾宝玉",
+          "role": "protagonist",
+          "importance": "primary",
+          "emotional_arc": "贾宝玉在本回中经历情感变化"
+        },
+        {
+          "name": "林黛玉",
+          "role": "protagonist",
+          "importance": "secondary",
+          "emotional_arc": "林黛玉在本回中经历情感变化"
+        },
+        {
+          "name": "薛宝钗",
+          "role": "supporting",
+          "importance": "secondary",
+          "emotional_arc": "薛宝钗在本回中经历情感变化"
+        }
+      ],
+      "main_plot_points": [
+        {
+          "sequence": 1,
+          "event": "第81回主要情节点一",
+          "type": "daily_life",
+          "location": "大观园",
+          "participants": [
+            "贾宝玉",
+            "林黛玉"
+          ]
+        },
+        {
+          "sequence": 2,
+          "event": "第81回主要情节点二",
+          "type": "conflict",
+          "location": "荣禧堂",
+          "participants": [
+            "林黛玉",
+            "薛宝钗"
+          ]
+        }
+      ],
+      "subplot_connections": [
+        {
+          "plotline_name": "宝黛爱情线",
+          "progress_description": "本回推进宝黛感情发展"
+        }
+      ],
+      "literary_elements": {
+        "poetry_count": 1,
+        "symbolism": [
+          "花落象征命运"
+        ],
+        "foreshadowing": [
+          "暗示后续变故"
+        ]
+      },
+      "chapter_metadata": {
+        "estimated_length": 2500,
+        "previous_chapter_link": "承接第80回",
+        "next_chapter_setup": "为第82回铺垫"
+      }
+    },
+    {
+      "chapter_number": 82,
+      "chapter_title": {
+        "first_part": "病榻诗成伤往日",
+        "second_part": "园中絮语话新愁"
+      },
+      "narrative_phase": "development",
+      "main_characters": [
+        {
+          "name": "林黛玉",
+          "role": "protagonist",
+          "importance": "primary",
+          "emotional_arc": "林黛玉在本回中经历情感变化"
+        },
+        {
+          "name": "薛宝钗",
+          "role": "supporting",
+          "importance": "secondary",
+          "emotional_arc": "薛宝钗在本回中经历情感变化"
+        },
+        {
+          "name": "贾母",
+          "role": "supporting",
+          "importance": "secondary",
+          "emotional_arc": "贾母在本回中经历情感变化"
+        }
+      ],
+      "main_plot_points": [
+        {
+          "sequence": 1,
+          "event": "第82回主要情节点一",
+          "type": "daily_life",
+          "location": "大观园",
+          "participants": [
+            "林黛玉",
+            "薛宝钗"
+          ]
+        },
+        {
+          "sequence": 2,
+          "event": "第82回主要情节点二",
+          "type": "conflict",
+          "location": "荣禧堂",
+          "participants": [
+            "薛宝钗",
+            "贾母"
+          ]
+        }
+      ],
+      "subplot_connections": [
+        {
+          "plotline_name": "宝黛爱情线",
+          "progress_description": "本回推进宝黛感情发展"
+        }
+      ],
+      "literary_elements": {
+        "poetry_count": 1,
+        "symbolism": [
+          "花落象征命运"
+        ],
+        "foreshadowing": [
+          "暗示后续变故"
+        ]
+      },
+      "chapter_metadata": {
+        "estimated_length": 2500,
+        "previous_chapter_link": "承接第81回",
+        "next_chapter_setup": "为第83回铺垫"
+      }
+    },
+    {
+      "chapter_number": 83,
+      "chapter_title": {
+        "first_part": "宝玉探病怀真意",
+        "second_part": "黛玉题诗寄深情"
+      },
+      "narrative_phase": "development",
+      "main_characters": [
+        {
+          "name": "薛宝钗",
+          "role": "supporting",
+          "importance": "primary",
+          "emotional_arc": "薛宝钗在本回中经历情感变化"
+        },
+        {
+          "name": "贾母",
+          "role": "supporting",
+          "importance": "secondary",
+          "emotional_arc": "贾母在本回中经历情感变化"
+        },
+        {
+          "name": "王夫人",
+          "role": "supporting",
+          "importance": "secondary",
+          "emotional_arc": "王夫人在本回中经历情感变化"
+        }
+      ],
+      "main_plot_points": [
+        {
+          "sequence": 1,
+          "event": "第83回主要情节点一",
+          "type": "daily_life",
+          "location": "大观园",
+          "participants": [
+            "薛宝钗",
+            "贾母"
+          ]
+        },
+        {
+          "sequence": 2,
+          "event": "第83回主要情节点二",
+          "type": "conflict",
+          "location": "荣禧堂",
+          "participants": [
+            "贾母",
+            "王夫人"
+          ]
+        }
+      ],
+      "subplot_connections": [
+        {
+          "plotline_name": "宝黛爱情线",
+          "progress_description": "本回推进宝黛感情发展"
+        }
+      ],
+      "literary_elements": {
+        "poetry_count": 1,
+        "symbolism": [
+          "花落象征命运"
+        ],
+        "foreshadowing": [
+          "暗示后续变故"
+        ]
+      },
+      "chapter_metadata": {
+        "estimated_length": 2500,
+        "previous_chapter_link": "承接第82回",
+        "next_chapter_setup": "为第84回铺垫"
+      }
+    },
+    {
+      "chapter_number": 84,
+      "chapter_title": {
+        "first_part": "荣府渐衰人心散",
+        "second_part": "怡红未改旧时颜"
+      },
+      "narrative_phase": "development",
+      "main_characters": [
+        {
+          "name": "贾宝玉",
+          "role": "protagonist",
+          "importance": "primary",
+          "emotional_arc": "贾宝玉在本回中经历情感变化"
+        },
+        {
+          "name": "林黛玉",
+          "role": "protagonist",
+          "importance": "secondary",
+          "emotional_arc": "林黛玉在本回中经历情感变化"
+        },
+        {
+          "name": "薛宝钗",
+          "role": "supporting",
+          "importance": "secondary",
+          "emotional_arc": "薛宝钗在本回中经历情感变化"
+        }
+      ],
+      "main_plot_points": [
+        {
+          "sequence": 1,
+          "event": "第84回主要情节点一",
+          "type": "daily_life",
+          "location": "大观园",
+          "participants": [
+            "贾宝玉",
+            "林黛玉"
+          ]
+        },
+        {
+          "sequence": 2,
+          "event": "第84回主要情节点二",
+          "type": "conflict",
+          "location": "荣禧堂",
+          "participants": [
+            "林黛玉",
+            "薛宝钗"
+          ]
+        }
+      ],
+      "subplot_connections": [
+        {
+          "plotline_name": "宝黛爱情线",
+          "progress_description": "本回推进宝黛感情发展"
+        }
+      ],
+      "literary_elements": {
+        "poetry_count": 1,
+        "symbolism": [
+          "花落象征命运"
+        ],
+        "foreshadowing": [
+          "暗示后续变故"
+        ]
+      },
+      "chapter_metadata": {
+        "estimated_length": 2500,
+        "previous_chapter_link": "承接第83回",
+        "next_chapter_setup": "为第85回铺垫"
+      }
+    },
+    {
+      "chapter_number": 85,
+      "chapter_title": {
+        "first_part": "贾母垂泪话家运",
+        "second_part": "宝钗持重理中馈"
+      },
+      "narrative_phase": "development",
+      "main_characters": [
+        {
+          "name": "林黛玉",
+          "role": "protagonist",
+          "importance": "primary",
+          "emotional_arc": "林黛玉在本回中经历情感变化"
+        },
+        {
+          "name": "薛宝钗",
+          "role": "supporting",
+          "importance": "secondary",
+          "emotional_arc": "薛宝钗在本回中经历情感变化"
+        },
+        {
+          "name": "贾母",
+          "role": "supporting",
+          "importance": "secondary",
+          "emotional_arc": "贾母在本回中经历情感变化"
+        }
+      ],
+      "main_plot_points": [
+        {
+          "sequence": 1,
+          "event": "第85回主要情节点一",
+          "type": "daily_life",
+          "location": "大观园",
+          "participants": [
+            "林黛玉",
+            "薛宝钗"
+          ]
+        },
+        {
+          "sequence": 2,
+          "event": "第85回主要情节点二",
+          "type": "conflict",
+          "location": "荣禧堂",
+          "participants": [
+            "薛宝钗",
+            "贾母"
+          ]
+        }
+      ],
+      "subplot_connections": [
+        {
+          "plotline_name": "宝黛爱情线",
+          "progress_description": "本回推进宝黛感情发展"
+        }
+      ],
+      "literary_elements": {
+        "poetry_count": 1,
+        "symbolism": [
+          "花落象征命运"
+        ],
+        "foreshadowing": [
+          "暗示后续变故"
+        ]
+      },
+      "chapter_metadata": {
+        "estimated_length": 2500,
+        "previous_chapter_link": "承接第84回",
+        "next_chapter_setup": "为第86回铺垫"
+      }
+    },
+    {
+      "chapter_number": 86,
+      "chapter_title": {
+        "first_part": "暗香疏影探春事",
+        "second_part": "落絮纷纷忆旧情"
+      },
+      "narrative_phase": "climax",
+      "main_characters": [
+        {
+          "name": "薛宝钗",
+          "role": "supporting",
+          "importance": "primary",
+          "emotional_arc": "薛宝钗在本回中经历情感变化"
+        },
+        {
+          "name": "贾母",
+          "role": "supporting",
+          "importance": "secondary",
+          "emotional_arc": "贾母在本回中经历情感变化"
+        },
+        {
+          "name": "王夫人",
+          "role": "supporting",
+          "importance": "secondary",
+          "emotional_arc": "王夫人在本回中经历情感变化"
+        }
+      ],
+      "main_plot_points": [
+        {
+          "sequence": 1,
+          "event": "第86回主要情节点一",
+          "type": "daily_life",
+          "location": "大观园",
+          "participants": [
+            "薛宝钗",
+            "贾母"
+          ]
+        },
+        {
+          "sequence": 2,
+          "event": "第86回主要情节点二",
+          "type": "conflict",
+          "location": "荣禧堂",
+          "participants": [
+            "贾母",
+            "王夫人"
+          ]
+        }
+      ],
+      "subplot_connections": [
+        {
+          "plotline_name": "宝黛爱情线",
+          "progress_description": "本回推进宝黛感情发展"
+        }
+      ],
+      "literary_elements": {
+        "poetry_count": 1,
+        "symbolism": [
+          "花落象征命运"
+        ],
+        "foreshadowing": [
+          "暗示后续变故"
+        ]
+      },
+      "chapter_metadata": {
+        "estimated_length": 2500,
+        "previous_chapter_link": "承接第85回",
+        "next_chapter_setup": "为第87回铺垫"
+      }
+    },
+    {
+      "chapter_number": 87,
+      "chapter_title": {
+        "first_part": "病榻诗成伤往日",
+        "second_part": "园中絮语话新愁"
+      },
+      "narrative_phase": "climax",
+      "main_characters": [
+        {
+          "name": "贾宝玉",
+          "role": "protagonist",
+          "importance": "primary",
+          "emotional_arc": "贾宝玉在本回中经历情感变化"
+        },
+        {
+          "name": "林黛玉",
+          "role": "protagonist",
+          "importance": "secondary",
+          "emotional_arc": "林黛玉在本回中经历情感变化"
+        },
+        {
+          "name": "薛宝钗",
+          "role": "supporting",
+          "importance": "secondary",
+          "emotional_arc": "薛宝钗在本回中经历情感变化"
+        }
+      ],
+      "main_plot_points": [
+        {
+          "sequence": 1,
+          "event": "第87回主要情节点一",
+          "type": "daily_life",
+          "location": "大观园",
+          "participants": [
+            "贾宝玉",
+            "林黛玉"
+          ]
+        },
+        {
+          "sequence": 2,
+          "event": "第87回主要情节点二",
+          "type": "conflict",
+          "location": "荣禧堂",
+          "participants": [
+            "林黛玉",
+            "薛宝钗"
+          ]
+        }
+      ],
+      "subplot_connections": [
+        {
+          "plotline_name": "宝黛爱情线",
+          "progress_description": "本回推进宝黛感情发展"
+        }
+      ],
+      "literary_elements": {
+        "poetry_count": 1,
+        "symbolism": [
+          "花落象征命运"
+        ],
+        "foreshadowing": [
+          "暗示后续变故"
+        ]
+      },
+      "chapter_metadata": {
+        "estimated_length": 2500,
+        "previous_chapter_link": "承接第86回",
+        "next_chapter_setup": "为第88回铺垫"
+      }
+    },
+    {
+      "chapter_number": 88,
+      "chapter_title": {
+        "first_part": "宝玉探病怀真意",
+        "second_part": "黛玉题诗寄深情"
+      },
+      "narrative_phase": "climax",
+      "main_characters": [
+        {
+          "name": "林黛玉",
+          "role": "protagonist",
+          "importance": "primary",
+          "emotional_arc": "林黛玉在本回中经历情感变化"
+        },
+        {
+          "name": "薛宝钗",
+          "role": "supporting",
+          "importance": "secondary",
+          "emotional_arc": "薛宝钗在本回中经历情感变化"
+        },
+        {
+          "name": "贾母",
+          "role": "supporting",
+          "importance": "secondary",
+          "emotional_arc": "贾母在本回中经历情感变化"
+        }
+      ],
+      "main_plot_points": [
+        {
+          "sequence": 1,
+          "event": "第88回主要情节点一",
+          "type": "daily_life",
+          "location": "大观园",
+          "participants": [
+            "林黛玉",
+            "薛宝钗"
+          ]
+        },
+        {
+          "sequence": 2,
+          "event": "第88回主要情节点二",
+          "type": "conflict",
+          "location": "荣禧堂",
+          "participants": [
+            "薛宝钗",
+            "贾母"
+          ]
+        }
+      ],
+      "subplot_connections": [
+        {
+          "plotline_name": "宝黛爱情线",
+          "progress_description": "本回推进宝黛感情发展"
+        }
+      ],
+      "literary_elements": {
+        "poetry_count": 1,
+        "symbolism": [
+          "花落象征命运"
+        ],
+        "foreshadowing": [
+          "暗示后续变故"
+        ]
+      },
+      "chapter_metadata": {
+        "estimated_length": 2500,
+        "previous_chapter_link": "承接第87回",
+        "next_chapter_setup": "为第89回铺垫"
+      }
+    },
+    {
+      "chapter_number": 89,
+      "chapter_title": {
+        "first_part": "荣府渐衰人心散",
+        "second_part": "怡红未改旧时颜"
+      },
+      "narrative_phase": "resolution",
+      "main_characters": [
+        {
+          "name": "薛宝钗",
+          "role": "supporting",
+          "importance": "primary",
+          "emotional_arc": "薛宝钗在本回中经历情感变化"
+        },
+        {
+          "name": "贾母",
+          "role": "supporting",
+          "importance": "secondary",
+          "emotional_arc": "贾母在本回中经历情感变化"
+        },
+        {
+          "name": "王夫人",
+          "role": "supporting",
+          "importance": "secondary",
+          "emotional_arc": "王夫人在本回中经历情感变化"
+        }
+      ],
+      "main_plot_points": [
+        {
+          "sequence": 1,
+          "event": "第89回主要情节点一",
+          "type": "daily_life",
+          "location": "大观园",
+          "participants": [
+            "薛宝钗",
+            "贾母"
+          ]
+        },
+        {
+          "sequence": 2,
+          "event": "第89回主要情节点二",
+          "type": "conflict",
+          "location": "荣禧堂",
+          "participants": [
+            "贾母",
+            "王夫人"
+          ]
+        }
+      ],
+      "subplot_connections": [
+        {
+          "plotline_name": "宝黛爱情线",
+          "progress_description": "本回推进宝黛感情发展"
+        }
+      ],
+      "literary_elements": {
+        "poetry_count": 1,
+        "symbolism": [
+          "花落象征命运"
+        ],
+        "foreshadowing": [
+          "暗示后续变故"
+        ]
+      },
+      "chapter_metadata": {
+        "estimated_length": 2500,
+        "previous_chapter_link": "承接第88回",
+        "next_chapter_setup": "为第90回铺垫"
+      }
+    },
+    {
+      "chapter_number": 90,
+      "chapter_title": {
+        "first_part": "贾母垂泪话家运",
+        "second_part": "宝钗持重理中馈"
+      },
+      "narrative_phase": "resolution",
+      "main_characters": [
+        {
+          "name": "贾宝玉",
+          "role": "protagonist",
+          "importance": "primary",
+          "emotional_arc": "贾宝玉在本回中经历情感变化"
+        },
+        {
+          "name": "林黛玉",
+          "role": "protagonist",
+          "importance": "secondary",
+          "emotional_arc": "林黛玉在本回中经历情感变化"
+        },
+        {
+          "name": "薛宝钗",
+          "role": "supporting",
+          "importance": "secondary",
+          "emotional_arc": "薛宝钗在本回中经历情感变化"
+        }
+      ],
+      "main_plot_points": [
+        {
+          "sequence": 1,
+          "event": "第90回主要情节点一",
+          "type": "daily_life",
+          "location": "大观园",
+          "participants": [
+            "贾宝玉",
+            "林黛玉"
+          ]
+        },
+        {
+          "sequence": 2,
+          "event": "第90回主要情节点二",
+          "type": "conflict",
+          "location": "荣禧堂",
+          "participants": [
+            "林黛玉",
+            "薛宝钗"
+          ]
+        }
+      ],
+      "subplot_connections": [
+        {
+          "plotline_name": "宝黛爱情线",
+          "progress_description": "本回推进宝黛感情发展"
+        }
+      ],
+      "literary_elements": {
+        "poetry_count": 1,
+        "symbolism": [
+          "花落象征命运"
+        ],
+        "foreshadowing": [
+          "暗示后续变故"
+        ]
+      },
+      "chapter_metadata": {
+        "estimated_length": 2500,
+        "previous_chapter_link": "承接第89回",
+        "next_chapter_setup": "为第91回铺垫"
+      }
+    }
+  ],
+  "character_distribution": {
+    "character_distribution": {
+      "贾宝玉": {
+        "total_appearances": 4,
+        "primary_role_chapters": [
+          81,
+          84,
+          87,
+          90
+        ],
+        "secondary_role_chapters": [],
+        "minor_role_chapters": [],
+        "absent_chapters": [
+          82,
+          83,
+          85,
+          86,
+          88,
+          89
+        ]
+      },
+      "林黛玉": {
+        "total_appearances": 7,
+        "primary_role_chapters": [
+          82,
+          85,
+          88
+        ],
+        "secondary_role_chapters": [
+          81,
+          84,
+          87,
+          90
+        ],
+        "minor_role_chapters": [],
+        "absent_chapters": [
+          83,
+          86,
+          89
+        ]
+      },
+      "薛宝钗": {
+        "total_appearances": 10,
+        "primary_role_chapters": [
+          83,
+          86,
+          89
+        ],
+        "secondary_role_chapters": [
+          81,
+          82,
+          84,
+          85,
+          87,
+          88,
+          90
+        ],
+        "minor_role_chapters": [],
+        "absent_chapters": []
+      },
+      "贾母": {
+        "total_appearances": 6,
+        "primary_role_chapters": [],
+        "secondary_role_chapters": [
+          82,
+          83,
+          85,
+          86,
+          88,
+          89
+        ],
+        "minor_role_chapters": [],
+        "absent_chapters": [
+          81,
+          84,
+          87,
+          90
+        ]
+      },
+      "王夫人": {
+        "total_appearances": 3,
+        "primary_role_chapters": [],
+        "secondary_role_chapters": [
+          83,
+          86,
+          89
+        ],
+        "minor_role_chapters": [],
+        "absent_chapters": [
+          81,
+          82,
+          84,
+          85,
+          87,
+          88,
+          90
+        ]
+      }
+    },
+    "total_characters": 5,
+    "distribution_balance": 0.94
+  },
+  "validation": {
+    "is_consistent": true,
+    "issues": [],
+    "suggestions": [],
+    "total_checks": 5,
+    "passed_checks": 5
+  }
+}

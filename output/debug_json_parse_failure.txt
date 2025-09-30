@@ -1,0 +1,568 @@
+
+
+=== global_structure - 2025-09-30 15:36:14.463740 ===
+Error: Expecting ',' delimiter: line 76 column 62 (char 2335)
+Content:
+{
+  "narrative_phases": {
+    "setup": {
+      "chapters": [81],
+      "description": "贾府外部危机隐约浮现，内部分歧加剧；宝黛之间因病与家事产生潜在隔阂，为后续破局埋下情感与命运的伏笔。",
+      "emotional_tone": "暗涌与不安"
+    },
+    "development": {
+      "chapters": [82, 83],
+      "description": "贾府财政与权势逐渐滑落，亲族关系趋紧；黛玉病情显著恶化，宝玉在孝与情之间摇摆，薛宝钗的沉默与隐忍加深情感的张力。",
+      "emotional_tone": "压抑与渐失"
+    },
+    "climax": {
+      "chapters": [84],
+      "description": "外部官司与内务失控同时爆发，黛玉病重至濒危，宝玉痛苦之中更明确对尘世的绝望；贾府的权势结构出现第一次明显崩塌。",
+      "emotional_tone": "剧烈冲击与心碎"
+    },
+    "resolution": {
+      "chapters": [85],
+      "description": "黛玉香消玉殒，宝玉心灰意冷种下出家意念；贾府虽仍维持表面繁华，但虚败已显，薛宝钗孤立无援的境况开始成形，故事进入全面衰败的总轨。",
+      "emotional_tone": "悲怆与虚无"
+    }
+  },
+  "major_plotlines": [
+    {
+      "id": "plotline_001",
+      "name": "宝黛爱情线",
+      "priority": "primary",
+      "chapters_involved": [81, 82, 83, 84, 85],
+      "narrative_arc": "相互关切→病痛加深与隔阂扩大→危机临近→诀别与永失",
+      "key_turning_points": [
+        {"chapter": 82, "event": "黛玉病情反复，宝玉探望受阻"},
+        {"chapter": 84, "event": "黛玉病危，宝玉当众痛哭"},
+        {"chapter": 85, "event": "黛玉去世，爱情线终结"}
+      ]
+    },
+    {
+      "id": "plotline_002",
+      "name": "贾府衰败线",
+      "priority": "primary",
+      "chapters_involved": [81, 82, 83, 84, 85],
+      "narrative_arc": "隐伏危机→权势削弱→官司与财政困境→初步崩塌→繁华幻灭的开端",
+      "key_turning_points": [
+        {"chapter": 81, "event": "传来外部案件波及贾府的消息"},
+        {"chapter": 83, "event": "借贷无门，府中陷入经济困境"},
+        {"chapter": 84, "event": "外部官司正式爆发，影响贾府声誉"}
+      ]
+    },
+    {
+      "id": "plotline_003",
+      "name": "薛宝钗命运线",
+      "priority": "secondary",
+      "chapters_involved": [82, 83, 84, 85],
+      "narrative_arc": "隐忍观望→默默承受→孤立无援→孤守空闺的开端",
+      "key_turning_points": [
+        {"chapter": 83, "event": "宝钗在府中事务中逐渐边缘化"},
+        {"chapter": 85, "event": "黛玉去世后，宝钗的情感孤立加深"}
+      ]
+    },
+    {
+      "id": "plotline_004",
+      "name": "宝玉人性觉醒线",
+      "priority": "secondary",
+      "chapters_involved": [81, 82, 84, 85],
+      "narrative_arc": "忧虑萌生→痛感人事无常→彻底心碎→决意出尘",
+      "key_turning_points": [
+        {"chapter": 81, "event": "宝玉对家事动荡的初步感知"},
+        {"chapter": 84, "event": "黛玉濒危刺激宝玉的生死思考"},
+        {"chapter": 85, "event": "宝玉萌生出家意念"}
+      ]
+    }
+  ],
+  "timeline": {
+    "time_span": "约半年的时间跨度，涵盖黛玉病情恶化、贾府由盛转衰的关键时期",
+    "key_moments": [
+      {"chapter": 81, "time": "初春", "event": "传来案件消息，贾府暗生危机"}
+
+
+=== chapter_81 - 2025-09-30 15:36:37.808247 ===
+Error: Expecting ',' delimiter: line 94 column 6 (char 2381)
+Content:
+{
+  "chapter_title": {
+    "first_part": "花影横窗，春心误作秋怀",
+    "second_part": "柳风绕院，旧恨翻成新怨"
+  },
+  "narrative_phase": "development",
+  "position_in_phase": "第1回/共2回",
+  "main_characters": [
+    {
+      "name": "贾宝玉",
+      "role": "protagonist",
+      "importance": "primary",
+      "key_scenes": [
+        {
+          "scene_name": "窗前偶见，情生误会",
+          "emotional_state": "困惑与隐忧",
+          "interactions": ["林黛玉", "薛宝钗"]
+        },
+        {
+          "scene_name": "花阴独坐，诗意寄愁",
+          "emotional_state": "伤感与期待",
+          "interactions": ["贾兰"]
+        }
+      ],
+      "emotional_arc": "由平静转入疑惑与暗自焦灼，心意未明而情绪渐升",
+      "character_development": "面对人情微妙变化，性格由单纯略带敏感，开始感知情感的复杂性"
+    },
+    {
+      "name": "林黛玉",
+      "role": "protagonist",
+      "importance": "primary",
+      "key_scenes": [
+        {
+          "scene_name": "院中独行，听闻片语",
+          "emotional_state": "酸楚与猜测",
+          "interactions": ["薛宝钗", "紫鹃"]
+        },
+        {
+          "scene_name": "月下作诗，寄语未言",
+          "emotional_state": "惆怅与自怜",
+          "interactions": ["紫鹃"]
+        }
+      ],
+      "emotional_arc": "从宁静到被触动情绪，先是怀疑再转入闷郁",
+      "character_development": "愈发敏感，内心防御增强，走向情绪深处"
+    },
+    {
+      "name": "薛宝钗",
+      "role": "supporting",
+      "importance": "secondary",
+      "key_scenes": [
+        {
+          "scene_name": "庭前偶语，意存劝慰",
+          "emotional_state": "平淡中含规劝",
+          "interactions": ["贾宝玉", "林黛玉"]
+        }
+      ],
+      "emotional_arc": "平稳而略带无奈，试图维系平衡",
+      "character_development": "继续展现世故与包容，隐隐觉察两人嫌隙"
+    },
+    {
+      "name": "紫鹃",
+      "role": "supporting",
+      "importance": "minor",
+      "key_scenes": [
+        {
+          "scene_name": "院中伴行，劝解难成",
+          "emotional_state": "关切与为难",
+          "interactions": ["林黛玉"]
+        }
+      ],
+      "emotional_arc": "由温声安慰到无计可施",
+      "character_development": "体现作为侍者的忠心与情感敏锐度"
+    }
+  ],
+  "main_plot_points": [
+    {
+      "sequence": 1,
+      "event": "宝玉在窗前偶见黛玉与宝钗交谈，误解为对己有意指责",
+      "type": "conflict",
+      "duration": "半日内",
+      "location": "怡红院外窗下",
+      "participants": ["贾宝玉", "林黛玉", "薛宝钗"],
+      "significance": "引发宝黛之间的误会，推动爱情线进入波折"
+    },
+    {
+      "sequence": 2,
+      "event": "黛玉独行至院内听闻旁人闲语，联想到宝玉心意不专",
+      "type": "emotional_moment",
+      "duration": "片刻",
+      "location": "潇湘馆前院",
+      "participants": ["林黛玉", "紫鹃"],
+      "significance": "加深黛玉的内心猜疑，为后回情绪爆发铺垫"
+    }
+
+
+=== chapter_82 - 2025-09-30 15:37:03.204582 ===
+Error: Expecting ',' delimiter: line 90 column 6 (char 2215)
+Content:
+{
+  "chapter_title": {
+    "first_part": "金玉暗香惊梦语",
+    "second_part": "朱门冷影动秋声"
+  },
+  "narrative_phase": "development",
+  "position_in_phase": "第2回/共2回",
+  "main_characters": [
+    {
+      "name": "贾宝玉",
+      "role": "protagonist",
+      "importance": "primary",
+      "key_scenes": [
+        {
+          "scene_name": "听府中暗事",
+          "emotional_state": "疑惑与不安",
+          "interactions": ["王夫人", "林黛玉"]
+        },
+        {
+          "scene_name": "庭院独思",
+          "emotional_state": "惆怅感伤",
+          "interactions": ["林黛玉"]
+        }
+      ],
+      "emotional_arc": "由平日闲适转向心生警觉与感伤",
+      "character_development": "开始对家族的危机有所直觉，内心产生阴影"
+    },
+    {
+      "name": "林黛玉",
+      "role": "supporting",
+      "importance": "primary",
+      "key_scenes": [
+        {
+          "scene_name": "赠诗寄意",
+          "emotional_state": "多愁敏感",
+          "interactions": ["贾**"]
+        },
+        {
+          "scene_name": "闻府衰兆",
+          "emotional_state": "隐忧与伤感",
+          "interactions": ["紫鹃"]
+        }
+      ],
+      "emotional_arc": "由清秋吟怀渐生对未来的不安与恐惧",
+      "character_development": "感知外部变化，将情感寄托于诗词与象征意境中"
+    },
+    {
+      "name": "王夫人",
+      "role": "antagonist",
+      "importance": "secondary",
+      "key_scenes": [
+        {
+          "scene_name": "与贾母密议",
+          "emotional_state": "焦虑与防范",
+          "interactions": ["贾母"]
+        },
+        {
+          "scene_name": "暗查府事",
+          "emotional_state": "紧张计划",
+          "interactions": ["管家"]
+        }
+      ],
+      "emotional_arc": "从表面镇定到内心急切，开始采取防御策略",
+      "character_development": "逐步显露家族守护者姿态，但方法趋于保守和防御"
+    },
+    {
+      "name": "贾母",
+      "role": "supporting",
+      "importance": "secondary",
+      "key_scenes": [
+        {
+          "scene_name": "听报外事",
+          "emotional_state": "沉思与担忧",
+          "interactions": ["王夫人", "凤姐"]
+        }
+      ],
+      "emotional_arc": "由泰然转向沉重，意识到家族的危机逼近",
+      "character_development": "情绪趋于静默，暂不外露，内心波澜开始涌动"
+    }
+  ],
+  "main_plot_points": [
+    {
+      "sequence": 1,
+      "event": "王夫人与贾母密议，得知京城权贵不再庇护贾府的消息",
+      "type": "turning_point",
+      "duration": "半日",
+      "location": "贾母正室",
+      "participants": ["王夫人", "贾母"],
+      "significance": "家族衰败进入表面阶段，矛盾激化前兆"
+    }
+
+
+=== chapter_83 - 2025-09-30 15:37:27.083168 ===
+Error: Expecting ',' delimiter: line 94 column 6 (char 2335)
+Content:
+{
+  "chapter_title": {
+    "first_part": "金榭风危花落地",
+    "second_part": "玉楼云散月沉檐"
+  },
+  "narrative_phase": "climax",
+  "position_in_phase": "第83回/共2回",
+  "main_characters": [
+    {
+      "name": "贾宝玉",
+      "role": "protagonist",
+      "importance": "primary",
+      "key_scenes": [
+        {
+          "scene_name": "闻府中祸变",
+          "emotional_state": "惊惧与迷惘",
+          "interactions": ["林黛玉", "贾母"]
+        },
+        {
+          "scene_name": "夜坐闲庭",
+          "emotional_state": "悲叹与茫然",
+          "interactions": ["薛宝钗"]
+        }
+      ],
+      "emotional_arc": "由初闻变故的惊慌，转为对未来无望的沉痛与混乱。",
+      "character_development": "逐渐从逃避现实的温室少年，开始直面家族困境的冲击。"
+    },
+    {
+      "name": "林黛玉",
+      "role": "protagonist",
+      "importance": "primary",
+      "key_scenes": [
+        {
+          "scene_name": "听宝玉述变",
+          "emotional_state": "怜惜与忧愤",
+          "interactions": ["贾宝玉"]
+        },
+        {
+          "scene_name": "独倚窗前",
+          "emotional_state": "伤感与自伤",
+          "interactions": []
+        }
+      ],
+      "emotional_arc": "悲情加深，对家族与自身命运的忧虑交织。",
+      "character_development": "由文雅多愁转为更深刻的宿命感，心境更孤寂。"
+    },
+    {
+      "name": "薛宝钗",
+      "role": "supporting",
+      "importance": "secondary",
+      "key_scenes": [
+        {
+          "scene_name": "劝慰宝玉",
+          "emotional_state": "冷静与理智",
+          "interactions": ["贾宝玉"]
+        }
+      ],
+      "emotional_arc": "保持沉着中透出隐秘的担忧。",
+      "character_development": "展现世故与稳重，在混乱中担当心理支柱。"
+    },
+    {
+      "name": "贾母",
+      "role": "supporting",
+      "importance": "minor",
+      "key_scenes": [
+        {
+          "scene_name": "闻变落泪",
+          "emotional_state": "悲痛与无奈",
+          "interactions": ["贾**", "林**"]
+        }
+      ],
+      "emotional_arc": "由操持全局的宁定转为力不从心的哀伤。",
+      "character_development": "表现家族长者在巨变中逐渐失去掌控。"
+    }
+  ],
+  "main_plot_points": [
+    {
+      "sequence": 1,
+      "event": "贾府传来抄检大观园的消息，众人惊骇未定。",
+      "type": "turning_point",
+      "duration": "半日",
+      "location": "贾府前厅",
+      "participants": ["贾宝玉", "贾母", "薛宝钗"],
+      "significance": "象征家族衰败的开始，推入高潮阶段。"
+    },
+    {
+      "sequence": 2,
+      "event": "宝玉与黛玉在园中短聚，彼此吐露恐惧与惆怅。",
+      "type": "emotional_moment",
+      "duration": "一刻",
+      "location": "紫鹃居外",
+      "participants": ["贾宝玉", "林黛玉"],
+      "significance": "深化二人情感纽带，并显露对命运的殊途认知。"
+    }
+
+
+=== chapter_84 - 2025-09-30 15:37:50.488939 ===
+Error: Expecting ',' delimiter: line 94 column 6 (char 2418)
+Content:
+{
+  "chapter_title": {
+    "first_part": "泪尽湘帘闻玉碎",
+    "second_part": "花残金屋见春衰"
+  },
+  "narrative_phase": "climax",
+  "position_in_phase": "第84回/共2回",
+  "main_characters": [
+    {
+      "name": "贾宝玉",
+      "role": "protagonist",
+      "importance": "primary",
+      "key_scenes": [
+        {
+          "scene_name": "探病湘云庭前",
+          "emotional_state": "焦急与怜惜交织",
+          "interactions": ["林黛玉", "王夫人"]
+        },
+        {
+          "scene_name": "与黛玉庭中争辩",
+          "emotional_state": "痛惜与困惑",
+          "interactions": ["林黛玉"]
+        }
+      ],
+      "emotional_arc": "由焦虑探病至陷入黛玉病情与家族困境的双重打击，逐渐萌生无力与失守之感",
+      "character_development": "在家族纷乱与爱情考验间展现出内心的柔弱与深情本质，却缺乏挽救事局的力量"
+    },
+    {
+      "name": "林黛玉",
+      "role": "protagonist",
+      "importance": "primary",
+      "key_scenes": [
+        {
+          "scene_name": "卧病听春声",
+          "emotional_state": "凄清与孤寂",
+          "interactions": ["紫鹃", "贾宝玉"]
+        },
+        {
+          "scene_name": "题诗寄心",
+          "emotional_state": "决绝中带有深情",
+          "interactions": ["贾宝玉"]
+        }
+      ],
+      "emotional_arc": "病情加重，心绪由幽怨走向淡然决绝，隐含对爱情的最后托付",
+      "character_development": "面对生死，表达内心最真实的情感与文学才情，使其形象更添悲剧之美"
+    },
+    {
+      "name": "薛宝钗",
+      "role": "supporting",
+      "importance": "secondary",
+      "key_scenes": [
+        {
+          "scene_name": "庭院劝慰",
+          "emotional_state": "温婉克制",
+          "interactions": ["贾母", "贾宝玉"]
+        }
+      ],
+      "emotional_arc": "由关切到隐隐感知未来婚事的逼近，情绪中兼顾忍耐与策略",
+      "character_development": "继续展现世故与包容，暗中为家族稳定做谋划"
+    },
+    {
+      "name": "王夫人",
+      "role": "antagonist",
+      "importance": "secondary",
+      "key_scenes": [
+        {
+          "scene_name": "安排宝玉婚事",
+          "emotional_state": "焦急与偏执",
+          "interactions": ["贾母", "薛宝钗"]
+        }
+      ],
+      "emotional_arc": "对家族未来的掌控欲增强，忽视宝玉与黛玉的情感，推动冲突进一步激化",
+      "character_development": "更明确地承担破坏宝黛感情的推动力"
+    }
+  ],
+  "main_plot_points": [
+    {
+      "sequence": 1,
+      "event": "宝玉探望病中黛玉，双方因误会旧事生出争执",
+      "type": "conflict",
+      "duration": "半日",
+      "location": "怡红院",
+      "participants": ["贾宝玉", "林黛玉"],
+      "significance": "加深宝黛感情矛盾，推动爱情线走向考验阶段"
+    },
+    {
+      "sequence": 2,
+      "event": "黛玉题诗抒怀，暗含告别之意",
+      "type": "emotional_moment",
+      "duration": "片刻",
+      "location": "潇湘馆",
+      "participants": ["林黛玉", "紫鹃"],
+      "significance": "以诗言志，传达其病情与心意，为后续命运的转折埋下伏笔"
+    }
+
+
+=== chapter_85 - 2025-09-30 15:38:09.645766 ===
+Error: Expecting ',' delimiter: line 90 column 6 (char 2212)
+Content:
+{
+  "chapter_title": {
+    "first_part": "落花无语空留恨",
+    "second_part": "残月有痕未尽情"
+  },
+  "narrative_phase": "resolution",
+  "position_in_phase": "第85回/共1回",
+  "main_characters": [
+    {
+      "name": "贾宝玉",
+      "role": "protagonist",
+      "importance": "primary",
+      "key_scenes": [
+        {
+          "scene_name": "绛芸轩梦醒之别",
+          "emotional_state": "黯然神伤",
+          "interactions": ["林黛玉", "薛宝钗"]
+        },
+        {
+          "scene_name": "潇湘馆独步",
+          "emotional_state": "失落与茫然",
+          "interactions": ["自我独白"]
+        }
+      ],
+      "emotional_arc": "由心痛到木然，逐渐接受现实的无奈",
+      "character_development": "从逃避世事到被动认命，情感趋于内敛"
+    },
+    {
+      "name": "林黛玉",
+      "role": "protagonist",
+      "importance": "primary",
+      "key_scenes": [
+        {
+          "scene_name": "病中吟诗",
+          "emotional_state": "哀婉凄清",
+          "interactions": ["贾宝玉", "紫鹃"]
+        },
+        {
+          "scene_name": "花下告别",
+          "emotional_state": "平静中含泪",
+          "interactions": ["贾宝玉"]
+        }
+      ],
+      "emotional_arc": "生命之末的安然与释怀，情感由执著渐归虚无",
+      "character_development": "由敏感多疑到彻悟自安，完成情感收束"
+    },
+    {
+      "name": "薛宝钗",
+      "role": "supporting",
+      "importance": "secondary",
+      "key_scenes": [
+        {
+          "scene_name": "病榻劝慰",
+          "emotional_state": "克制与哀怜",
+          "interactions": ["贾宝玉", "林黛玉"]
+        },
+        {
+          "scene_name": "独处自省",
+          "emotional_state": "沉静淡然",
+          "interactions": ["自我独白"]
+        }
+      ],
+      "emotional_arc": "从外在的镇重到内心的孤寂，接受命定安排",
+      "character_development": "展现周全善解的另一面，有无力感"
+    },
+    {
+      "name": "紫鹃",
+      "role": "supporting",
+      "importance": "minor",
+      "key_scenes": [
+        {
+          "scene_name": "守护黛玉",
+          "emotional_state": "隐忍悲痛",
+          "interactions": ["林黛玉", "贾宝玉"]
+        }
+      ],
+      "emotional_arc": "由焦虑到悲痛，最终接受黛玉命数",
+      "character_development": "忠心与情深体现于细节之中"
+    }
+  ],
+  "main_plot_points": [
+    {
+      "sequence": 1,
+      "event": "黛玉病中吟诗，回忆往昔情事，暗示时日无多",
+      "type": "emotional_moment",
+      "duration": "半日",
+      "location": "潇湘馆",
+      "participants": ["林黛玉", "紫鹃"],
+      "significance": "为黛玉离世作情感铺垫，深化悲剧色彩"
+    }

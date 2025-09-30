@@ -8,8 +8,10 @@
 
 import asyncio
 import json
+import re
 from typing import Dict, List, Any, Optional
 from datetime import datetime
+from pathlib import Path
 
 from ..base import BaseAgent, AgentResult
 from ..gpt5_client import get_gpt5_client
@@ -25,6 +27,9 @@ class ChapterPlannerAgent(BaseAgent):
         self.settings = settings
         self.gpt5_client = get_gpt5_client(settings)
         self.prompts = get_literary_prompts()
+        
+        # 添加mock模式开关（用于开发测试）
+        self.use_mock = getattr(settings, 'use_mock_chapter_planner', False)
 
     async def process(self, input_data: Dict[str, Any]) -> AgentResult:
         """
@@ -116,6 +121,13 @@ class ChapterPlannerAgent(BaseAgent):
                 "timeline": {...}            # 时间线规划
             }
         """
+        # 如果启用mock模式，直接返回默认结构
+        if self.use_mock:
+            print("🎭 [MOCK模式] 使用模拟全局结构")
+            return self._create_default_global_structure(
+                start_chapter, chapters_count, user_ending
+            )
+        
         # 构建prompt
         system_prompt, user_prompt = self.prompts.create_custom_prompt(
             "chapter_planner_global",
@@ -130,19 +142,32 @@ class ChapterPlannerAgent(BaseAgent):
         )
 
         # 调用GPT-5生成全局结构
-        response = await self.gpt5_client.generate(
-            system_prompt=system_prompt,
-            user_prompt=user_prompt,
+        result = await self.gpt5_client.generate_with_retry(
+            prompt=user_prompt,
+            system_message=system_prompt,
             temperature=0.7,
             max_tokens=4000
         )
 
+        # 检查是否成功
+        if not result.get("success", False):
+            print(f"⚠️  GPT-5调用失败，使用默认全局结构: {result.get('error', 'Unknown error')}")
+            return self._create_default_global_structure(
+                start_chapter, chapters_count, user_ending
+            )
+
         # 解析并验证结果
-        try:
-            global_structure = json.loads(response)
+        response_content = result.get("content", "")
+        global_structure = self._parse_json_from_response(
+            response_content, 
+            context="global_structure"
+        )
+        
+        if global_structure:
             return global_structure
-        except json.JSONDecodeError:
-            # 如果返回的不是JSON，构建默认结构
+        else:
+            print(f"⚠️  JSON解析失败，使用默认全局结构")
+            print(f"📄 原始响应: {response_content[:200]}...")
             return self._create_default_global_structure(
                 start_chapter, chapters_count, user_ending
             )
@@ -207,6 +232,11 @@ class ChapterPlannerAgent(BaseAgent):
         # 确定当前章节所处的叙事阶段
         narrative_phase = self._get_narrative_phase(chapter_num, global_structure)
 
+        # 如果启用mock模式，直接返回默认结构
+        if self.use_mock:
+            print(f"🎭 [MOCK模式] 第{chapter_num}回使用模拟结构")
+            return self._create_enhanced_mock_chapter_detail(chapter_num, narrative_phase, previous_chapter)
+
         # 找到相关的剧情线
         related_plotlines = self._get_related_plotlines(chapter_num, global_structure)
 
@@ -224,20 +254,30 @@ class ChapterPlannerAgent(BaseAgent):
         )
 
         # 调用GPT-5生成章节详细规划
-        response = await self.gpt5_client.generate(
-            system_prompt=system_prompt,
-            user_prompt=user_prompt,
+        result = await self.gpt5_client.generate_with_retry(
+            prompt=user_prompt,
+            system_message=system_prompt,
             temperature=0.7,
-            max_tokens=3000
+            max_tokens=4000
         )
 
+        # 检查是否成功
+        if not result.get("success", False):
+            print(f"⚠️  第{chapter_num}回规划失败，使用默认结构: {result.get('error', 'Unknown error')}")
+            return self._create_default_chapter_detail(chapter_num, narrative_phase)
+
         # 解析结果
-        try:
-            chapter_detail = json.loads(response)
+        response_content = result.get("content", "")
+        chapter_detail = self._parse_json_from_response(
+            response_content,
+            context=f"chapter_{chapter_num}"
+        )
+        
+        if chapter_detail:
             chapter_detail["chapter_number"] = chapter_num
             return chapter_detail
-        except json.JSONDecodeError:
-            # 如果解析失败，返回默认结构
+        else:
+            print(f"⚠️  第{chapter_num}回JSON解析失败，使用默认结构")
             return self._create_default_chapter_detail(chapter_num, narrative_phase)
 
     def _distribute_characters(self, chapters_details: List[Dict[str, Any]]) -> Dict[str, Any]:
@@ -355,6 +395,88 @@ class ChapterPlannerAgent(BaseAgent):
         }
 
     # ========== 辅助方法 ==========
+
+    def _parse_json_from_response(self, response_content: str, context: str = "") -> Optional[Dict[str, Any]]:
+        """
+        从GPT响应中智能解析JSON
+        
+        Args:
+            response_content: GPT返回的原始内容
+            context: 上下文信息（用于调试）
+            
+        Returns:
+            解析后的JSON字典，如果失败则返回None
+        """
+        # 保存原始响应以供调试
+        if hasattr(self, '_debug_responses'):
+            self._debug_responses.append({
+                "context": context,
+                "content": response_content,
+                "timestamp": datetime.now().isoformat()
+            })
+        
+        # 策略1: 直接解析
+        try:
+            return json.loads(response_content)
+        except json.JSONDecodeError:
+            pass
+        
+        # 策略2: 提取markdown代码块
+        if "```json" in response_content:
+            json_start = response_content.find("```json") + 7
+            json_end = response_content.find("```", json_start)
+            if json_end > json_start:
+                json_str = response_content[json_start:json_end].strip()
+                try:
+                    return json.loads(json_str)
+                except json.JSONDecodeError:
+                    pass
+        
+        # 策略3: 提取普通代码块
+        if "```" in response_content:
+            json_start = response_content.find("```") + 3
+            json_end = response_content.find("```", json_start)
+            if json_end > json_start:
+                json_str = response_content[json_start:json_end].strip()
+                # 移除可能的语言标识
+                if json_str.startswith(("json\n", "JSON\n")):
+                    json_str = json_str.split('\n', 1)[1]
+                try:
+                    return json.loads(json_str)
+                except json.JSONDecodeError:
+                    pass
+        
+        # 策略4: 查找第一个 { 和最后一个 }
+        first_brace = response_content.find('{')
+        last_brace = response_content.rfind('}')
+        
+        if first_brace != -1 and last_brace != -1 and last_brace > first_brace:
+            json_str = response_content[first_brace:last_brace+1]
+            try:
+                return json.loads(json_str)
+            except json.JSONDecodeError as e:
+                # 尝试修复常见的JSON错误
+                # 1. 移除注释
+                json_str = re.sub(r'//.*?\n', '\n', json_str)
+                # 2. 修复尾随逗号
+                json_str = re.sub(r',(\s*[}\]])', r'\1', json_str)
+                # 3. 修复单引号
+                json_str = json_str.replace("'", '"')
+                
+                try:
+                    return json.loads(json_str)
+                except json.JSONDecodeError as e2:
+                    # 保存失败的JSON以供调试
+                    debug_file = Path("output/debug_json_parse_failure.txt")
+                    debug_file.parent.mkdir(parents=True, exist_ok=True)
+                    with open(debug_file, 'a', encoding='utf-8') as f:
+                        f.write(f"\n\n=== {context} - {datetime.now()} ===\n")
+                        f.write(f"Error: {e2}\n")
+                        f.write(f"Content:\n{json_str}\n")
+                    
+                    print(f"⚠️  JSON解析失败已保存到: {debug_file}")
+        
+        return None
 
     def _extract_knowledge_summary(self, knowledge_base: Dict[str, Any]) -> str:
         """提取知识库摘要"""
@@ -520,6 +642,77 @@ class ChapterPlannerAgent(BaseAgent):
                 "estimated_length": 2500,
                 "previous_chapter_link": "待规划",
                 "next_chapter_setup": "待规划"
+            }
+        }
+    
+    def _create_enhanced_mock_chapter_detail(self, chapter_num: int, narrative_phase: str, previous_chapter: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        """创建增强版的模拟章节规划（用于mock模式测试）"""
+        
+        # 模拟的回目标题库
+        mock_titles = [
+            ("暗香疏影探春事", "落絮纷纷忆旧情"),
+            ("病榻诗成伤往日", "园中絮语话新愁"),
+            ("宝玉探病怀真意", "黛玉题诗寄深情"),
+            ("荣府渐衰人心散", "怡红未改旧时颜"),
+            ("贾母垂泪话家运", "宝钗持重理中馈")
+        ]
+        
+        # 选择一个标题（基于章节号）
+        title_idx = (chapter_num - 81) % len(mock_titles)
+        title = mock_titles[title_idx]
+        
+        # 模拟主要角色
+        all_characters = ["贾宝玉", "林黛玉", "薛宝钗", "贾母", "王夫人", "贾政", "史湘云", "探春"]
+        # 根据章节号选择不同的角色组合
+        char_offset = (chapter_num - 81) % 3
+        main_chars = all_characters[char_offset:char_offset+3]
+        
+        return {
+            "chapter_number": chapter_num,
+            "chapter_title": {
+                "first_part": title[0],
+                "second_part": title[1]
+            },
+            "narrative_phase": narrative_phase,
+            "main_characters": [
+                {
+                    "name": char_name,
+                    "role": "protagonist" if char_name in ["贾宝玉", "林黛玉"] else "supporting",
+                    "importance": "primary" if i == 0 else "secondary",
+                    "emotional_arc": f"{char_name}在本回中经历情感变化"
+                } for i, char_name in enumerate(main_chars)
+            ],
+            "main_plot_points": [
+                {
+                    "sequence": 1,
+                    "event": f"第{chapter_num}回主要情节点一",
+                    "type": "daily_life",
+                    "location": "大观园",
+                    "participants": main_chars[:2]
+                },
+                {
+                    "sequence": 2,
+                    "event": f"第{chapter_num}回主要情节点二",
+                    "type": "conflict",
+                    "location": "荣禧堂",
+                    "participants": main_chars[1:]
+                }
+            ],
+            "subplot_connections": [
+                {
+                    "plotline_name": "宝黛爱情线",
+                    "progress_description": "本回推进宝黛感情发展"
+                }
+            ],
+            "literary_elements": {
+                "poetry_count": 1,
+                "symbolism": ["花落象征命运"],
+                "foreshadowing": ["暗示后续变故"]
+            },
+            "chapter_metadata": {
+                "estimated_length": 2500,
+                "previous_chapter_link": f"承接第{chapter_num-1}回" if chapter_num > 81 else "承接第80回",
+                "next_chapter_setup": f"为第{chapter_num+1}回铺垫"
             }
         }
 

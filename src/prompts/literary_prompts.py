@@ -514,9 +514,11 @@ class LiteraryPrompts:
 1. 回目标题对仗工整，富有意境
 2. 主要角色3-5位，角色选择合理
 3. 情节点3-5个，承上启下
-4. 输出纯JSON格式，不要包含其他文字""",
+4. **必须输出完整的JSON**，确保所有括号和字段都闭合
+5. 不要在JSON中包含注释或其他非JSON内容
+6. poetry_count字段必须是数字，不要使用字符串""",
                 temperature=0.7,
-                max_tokens=3000,
+                max_tokens=4000,
                 description="单章详细规划，设计每一回的具体内容"
             )
         }
