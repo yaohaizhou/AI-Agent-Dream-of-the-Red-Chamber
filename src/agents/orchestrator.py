@@ -13,6 +13,7 @@ from pathlib import Path
 from .base import BaseAgent, AgentResult, MockAgent
 from .real.data_processor_agent import DataProcessorAgent
 from .real.strategy_planner_agent import StrategyPlannerAgent
+from .real.chapter_planner_agent import ChapterPlannerAgent
 from .real.content_generator_agent import ContentGeneratorAgent
 from .real.quality_checker_agent import QualityCheckerAgent
 from .communication import get_communication_bus, MessageType
@@ -41,6 +42,10 @@ class OrchestratorAgent(BaseAgent):
             # 续写策略Agent
             agents['strategy_planner'] = StrategyPlannerAgent(self.settings)
             agents['strategy_planner'].set_communication_bus(self.communication_bus)
+
+            # 章节规划Agent（V2新增）
+            agents['chapter_planner'] = ChapterPlannerAgent(self.settings)
+            agents['chapter_planner'].set_communication_bus(self.communication_bus)
 
             # 内容生成Agent
             agents['content_generator'] = ContentGeneratorAgent(self.settings)
@@ -86,6 +91,15 @@ class OrchestratorAgent(BaseAgent):
             {
                 "response_delay": 1.5,
                 "task": "根据用户结局制定续写策略和大纲"
+            }
+        )
+
+        # 章节规划Agent（V2新增）
+        agents['chapter_planner'] = MockAgent(
+            "章节规划Agent",
+            {
+                "response_delay": 1.0,
+                "task": "设计每一回的详细内容规划"
             }
         )
 
@@ -157,11 +171,37 @@ class OrchestratorAgent(BaseAgent):
 
             print("✅ [DEBUG] 预处理阶段完成")
 
-            # 3. 生成续写内容
-            print("🔍 [DEBUG] 步骤3: 生成续写内容")
+            # 3. 章节规划（V2新增）
+            print("🔍 [DEBUG] 步骤3: 章节规划")
+            chapter_planning_context = {
+                "user_ending": input_data.get("ending", ""),
+                "overall_strategy": strategy_result.data,
+                "knowledge_base": preprocessing_result.data,
+                "chapters_count": input_data.get("chapters", 1),  # 默认规划1回用于测试
+                "start_chapter": 81
+            }
+            print(f"🔍 [DEBUG] 章节规划上下文: {chapter_planning_context}")
+
+            chapter_plan_result = await self._plan_chapters(chapter_planning_context)
+
+            print(f"🔍 [DEBUG] 章节规划结果: success={chapter_plan_result.success}, message={chapter_plan_result.message}")
+
+            if not chapter_plan_result.success:
+                print("❌ [DEBUG] 章节规划失败")
+                return AgentResult(
+                    success=False,
+                    data=chapter_plan_result.data,
+                    message="章节规划失败"
+                )
+
+            print("✅ [DEBUG] 章节规划完成")
+
+            # 4. 生成续写内容
+            print("🔍 [DEBUG] 步骤4: 生成续写内容")
             content_context = {
                 "knowledge_base": preprocessing_result.data,
                 "strategy": strategy_result.data,
+                "chapter_plan": chapter_plan_result.data,  # V2新增：传递章节规划
                 "user_ending": input_data.get("ending", "")
             }
             print(f"🔍 [DEBUG] 内容生成上下文: {content_context}")
@@ -180,14 +220,14 @@ class OrchestratorAgent(BaseAgent):
 
             print("✅ [DEBUG] 内容生成完成")
 
-            # 4. 质量评估和迭代优化
-            print("🔍 [DEBUG] 步骤4: 质量评估和迭代优化")
+            # 5. 质量评估和迭代优化
+            print("🔍 [DEBUG] 步骤5: 质量评估和迭代优化")
             content_result, quality_result = await self._iterative_improvement(content_result, input_data)
 
             print(f"🔍 [DEBUG] 最终质量评估结果: success={quality_result.success}, message={quality_result.message}")
 
-            # 5. 格式化输出
-            print("🔍 [DEBUG] 步骤5: 格式化输出")
+            # 6. 格式化输出
+            print("🔍 [DEBUG] 步骤6: 格式化输出")
             final_result = await self._format_output({
                 "content": content_result.data,
                 "quality": quality_result.data,
@@ -202,6 +242,7 @@ class OrchestratorAgent(BaseAgent):
             integrated_data = {
                 "knowledge_base": preprocessing_result.data if preprocessing_result.success else {},
                 "strategy": strategy_result.data if strategy_result.success else {},
+                "chapter_plan": chapter_plan_result.data if chapter_plan_result.success else {},  # V2新增
                 "content": content_result.data if content_result.success else {},
                 "quality": quality_result.data if quality_result.success else {},
                 "user_interface": final_result.data if final_result.success else {}
@@ -240,6 +281,11 @@ class OrchestratorAgent(BaseAgent):
         )
 
         return preprocessing_result, strategy_result
+
+    async def _plan_chapters(self, context: Dict[str, Any]) -> AgentResult:
+        """章节规划（V2新增）"""
+        print("📋 [DEBUG] 调用ChapterPlannerAgent进行章节规划")
+        return await self.agents['chapter_planner'].process(context)
 
     async def _generate_content(self, context: Dict[str, Any]) -> AgentResult:
         """生成续写内容"""
