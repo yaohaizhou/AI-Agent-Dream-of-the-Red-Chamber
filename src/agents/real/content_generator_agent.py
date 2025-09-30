@@ -68,26 +68,47 @@ class ContentGeneratorAgent(BaseAgent):
                 return await self._generate_improved_content(input_data, improvement_context)
 
             strategy_data = input_data.get("strategy", {})
+            chapter_plan = input_data.get("chapter_plan", {})  # V2新增
             chapters_to_generate = input_data.get("chapters", 81)
 
             print(f"🎨 [DEBUG] 策略数据: {strategy_data}")
+            print(f"🎨 [DEBUG] 章节规划: {chapter_plan.get('metadata', {})}")
             print(f"🎨 [DEBUG] 需要生成章节数: {chapters_to_generate}")
 
-            plot_outline = strategy_data.get("plot_outline", [])
-            print(f"🎨 [DEBUG] 情节大纲包含 {len(plot_outline)} 个章节")
+            # V2: 优先使用chapter_plan，如果没有则回退到plot_outline
+            if chapter_plan and chapter_plan.get("chapters"):
+                print("🎨 [DEBUG] 使用V2章节规划生成内容")
+                chapters_to_process = chapter_plan.get("chapters", [])
+                use_chapter_plan = True
+            else:
+                print("🎨 [DEBUG] 使用V1情节大纲生成内容（向后兼容）")
+                chapters_to_process = strategy_data.get("plot_outline", [])
+                use_chapter_plan = False
+            
+            print(f"🎨 [DEBUG] 待处理章节数: {len(chapters_to_process)}")
 
             # 生成所有章节内容
             generated_chapters = []
 
-            for i, chapter_info in enumerate(plot_outline[:chapters_to_generate]):
-                print(f"🎨 [DEBUG] 开始生成第 {i+1} 章: {chapter_info}")
+            for i, chapter_info in enumerate(chapters_to_process[:chapters_to_generate]):
+                print(f"🎨 [DEBUG] 开始生成第 {i+1} 章: {chapter_info.get('chapter_number') if use_chapter_plan else chapter_info.get('chapter_num')}")
 
                 # 生成单个章节
-                chapter_content = await self._generate_chapter_content(
-                    chapter_info,
-                    strategy_data,
-                    input_data.get("knowledge_base", {})
-                )
+                if use_chapter_plan:
+                    # V2: 使用详细的章节规划
+                    chapter_content = await self._generate_chapter_from_plan(
+                        chapter_info,
+                        chapter_plan,
+                        strategy_data,
+                        input_data.get("knowledge_base", {})
+                    )
+                else:
+                    # V1: 使用旧的方式（向后兼容）
+                    chapter_content = await self._generate_chapter_content(
+                        chapter_info,
+                        strategy_data,
+                        input_data.get("knowledge_base", {})
+                    )
 
                 print(f"🎨 [DEBUG] 第 {i+1} 章生成结果: success={chapter_content['success']}")
 
@@ -129,13 +150,178 @@ class ContentGeneratorAgent(BaseAgent):
             self.update_status("error")
             return self.handle_error(e)
 
+    async def _generate_chapter_from_plan(
+        self,
+        chapter_plan: Dict[str, Any],
+        full_plan: Dict[str, Any],
+        strategy_data: Dict[str, Any],
+        knowledge_base: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """根据V2章节规划生成内容"""
+        try:
+            chapter_num = chapter_plan.get("chapter_number", 81)
+            print(f"📝 [DEBUG] [V2] 开始生成章节 {chapter_num}")
+
+            # 提取章节规划信息
+            title_info = chapter_plan.get("chapter_title", {})
+            chapter_title = f"{title_info.get('first_part', '')} {title_info.get('second_part', '')}"
+            
+            # 兼容V1和V2的情节点字段名
+            plot_points = chapter_plan.get("plot_points", []) or chapter_plan.get("main_plot_points", [])
+            main_characters = chapter_plan.get("main_characters", [])
+            literary_elements = chapter_plan.get("literary_elements", {})
+            
+            print(f"📝 [DEBUG] 章节标题: {chapter_title}")
+            print(f"📝 [DEBUG] 主要角色: {[c.get('name') for c in main_characters]}")
+            print(f"📝 [DEBUG] 情节点数: {len(plot_points)}")
+
+            # 构建生成上下文（V2版本）
+            context = self._build_v2_generation_context(
+                chapter_plan, full_plan, strategy_data, knowledge_base
+            )
+
+            # 创建prompt
+            system_msg, user_prompt = self.prompts.create_custom_prompt(
+                "content_generator",
+                {
+                    "chapter_num": chapter_num,
+                    "chapter_title": chapter_title,
+                    "chapter_summary": "; ".join([p.get("event", "") for p in plot_points]),
+                    "key_characters": ", ".join([c.get("name", "") for c in main_characters]),
+                    "theme_focus": f"诗词{literary_elements.get('poetry_count', 0)}首"
+                }
+            )
+
+            # 添加V2规划的详细信息到prompt
+            full_prompt = user_prompt + "\n\n## 详细规划参考：\n" + context
+
+            # 调用GPT-5生成内容
+            print("📝 [DEBUG] [V2] 调用GPT-5 API...")
+            response = await self.gpt5_client.generate_with_retry(
+                prompt=full_prompt,
+                system_message=system_msg,
+                temperature=0.8,
+                max_tokens=8000
+            )
+
+            if response["success"]:
+                print("📝 [DEBUG] [V2] API调用成功，开始后处理...")
+                # 构建一个V1兼容的chapter_info用于后处理
+                chapter_info_v1 = {
+                    "chapter_num": chapter_num,
+                    "title": chapter_title
+                }
+                content = self._post_process_content(response["content"], chapter_info_v1)
+                print(f"📝 [DEBUG] [V2] 后处理完成，内容长度: {len(content)}")
+                
+                return {
+                    "success": True,
+                    "content": content,
+                    "chapter_num": chapter_num,
+                    "word_count": len(content),
+                    "generation_info": response,
+                    "used_plan": True  # 标记使用了章节规划
+                }
+            else:
+                print(f"📝 [DEBUG] [V2] API调用失败: {response.get('error', 'unknown error')}")
+                return {
+                    "success": False,
+                    "error": response.get("error", "生成失败"),
+                    "chapter_num": chapter_num
+                }
+
+        except Exception as e:
+            print(f"📝 [DEBUG] [V2] 生成章节异常: {str(e)}")
+            import traceback
+            print(f"📝 [DEBUG] 异常详情:\n{traceback.format_exc()}")
+            return {
+                "success": False,
+                "error": str(e),
+                "chapter_num": chapter_plan.get("chapter_number", 81)
+            }
+
+    def _build_v2_generation_context(
+        self,
+        chapter_plan: Dict[str, Any],
+        full_plan: Dict[str, Any],
+        strategy_data: Dict[str, Any],
+        knowledge_base: Dict[str, Any]
+    ) -> str:
+        """构建V2版本的生成上下文"""
+        context_parts = []
+
+        # 1. 章节在整体规划中的位置
+        narrative_phase = chapter_plan.get("narrative_phase", "")
+        if narrative_phase:
+            context_parts.append(f"**叙事阶段**: {narrative_phase}")
+
+        # 2. 主要角色及其情感弧线
+        main_characters = chapter_plan.get("main_characters", [])
+        if main_characters:
+            char_info = []
+            for char in main_characters[:5]:  # 最多5个
+                name = char.get("name", "")
+                emotional_arc = char.get("emotional_arc", "")
+                char_info.append(f"{name} ({emotional_arc})")
+            context_parts.append(f"**主要角色**: {'; '.join(char_info)}")
+
+        # 3. 情节点详情
+        plot_points = chapter_plan.get("plot_points", []) or chapter_plan.get("main_plot_points", [])
+        if plot_points:
+            plot_info = []
+            for i, point in enumerate(plot_points, 1):
+                event = point.get("event", "")
+                location = point.get("location", "")
+                participants = point.get("participants", [])
+                if isinstance(participants, list):
+                    participants_str = "、".join(participants)
+                else:
+                    participants_str = str(participants)
+                plot_info.append(f"{i}. {event}（地点：{location}，人物：{participants_str}）")
+            context_parts.append(f"**情节点**:\n" + "\n".join(plot_info))
+
+        # 4. 文学元素要求
+        literary_elements = chapter_plan.get("literary_elements", {})
+        if literary_elements:
+            elements_info = []
+            poetry_count = literary_elements.get("poetry_count", 0)
+            if poetry_count:
+                elements_info.append(f"诗词{poetry_count}首")
+            symbolism = literary_elements.get("symbolism", [])
+            if symbolism:
+                elements_info.append(f"象征手法：{'、'.join(symbolism)}")
+            foreshadowing = literary_elements.get("foreshadowing", [])
+            if foreshadowing:
+                elements_info.append(f"伏笔：{'、'.join(foreshadowing)}")
+            if elements_info:
+                context_parts.append(f"**文学元素**: {'; '.join(elements_info)}")
+
+        # 5. 前后衔接
+        connections = chapter_plan.get("connections", {})
+        if connections:
+            prev_link = connections.get("previous", "")
+            next_setup = connections.get("next", "")
+            if prev_link:
+                context_parts.append(f"**承上**: {prev_link}")
+            if next_setup:
+                context_parts.append(f"**启下**: {next_setup}")
+
+        # 6. 总体策略参考
+        overall_strategy = strategy_data.get("overall_strategy", {})
+        if overall_strategy:
+            approach = overall_strategy.get("overall_approach", "")
+            if approach:
+                context_parts.append(f"**总体策略**: {approach}")
+
+        return "\n\n".join(context_parts)
+
     async def _generate_chapter_content(
         self,
         chapter_info: Dict[str, Any],
         strategy_data: Dict[str, Any],
         knowledge_base: Dict[str, Any]
     ) -> Dict[str, Any]:
-        """生成单个章节内容"""
+        """生成单个章节内容（V1向后兼容）"""
         try:
             print(f"📝 [DEBUG] 开始生成章节 {chapter_info.get('chapter_num', 'unknown')}")
 
