@@ -1,0 +1,446 @@
+{
+  "metadata": {
+    "version": "1.0",
+    "created_at": "2025-09-30T16:30:35.510801",
+    "user_ending": "贾府衰败势如流 往昔繁华化虚无",
+    "total_chapters": 3,
+    "start_chapter": 81,
+    "end_chapter": 83
+  },
+  "global_structure": {
+    "narrative_phases": {
+      "setup": {
+        "chapters": [
+          81
+        ],
+        "goal": "在宝黛感情经过前期种种波折后，重新建立深层的心灵交流，同时埋下贾府暗潮涌动的危机伏笔。",
+        "emotional_tone": "温情与微妙的不安并存，既有久别重逢的喜悦，也有对未来的隐隐担忧。"
+      },
+      "development": {
+        "chapters": [
+          82
+        ],
+        "goal": "借宝黛感情的深化，映衬家族的衰落迹象逐步显现，引出对个人命运与家族前途的多重思索。",
+        "emotional_tone": "温暖中夹杂着压抑与焦虑，情感升温的同时，现实的阴影渐渐侵蚀生活。"
+      },
+      "climax": {
+        "chapters": [
+          83
+        ],
+        "goal": "危机全面爆发——贾府出现重大财政与政治困境，人物命运走到关键转折，爱情与家族命运两条线交织碰撞。",
+        "emotional_tone": "紧张与悲怆交织，爱与责任、梦想与现实的冲突达到顶点。"
+      },
+      "resolution": {
+        "chapters": [
+          83
+        ],
+        "goal": "在冲突的余波中，主要人物完成精神的转折与个人的觉醒，初步显露贾府由盛转衰的不可逆趋势。",
+        "emotional_tone": "沉静、感伤与哲思并存，繁华已远，心灵开始寻求解脱与超越。"
+      }
+    },
+    "plot_lines": [
+      {
+        "name": "宝黛爱情线",
+        "priority": "primary",
+        "chapters": [
+          81,
+          82,
+          83
+        ],
+        "arc": "久别重逢→情感升温→共同面对家族危机→精神契合升华",
+        "turning_points": [
+          "81回：重逢与真心对话化解隔阂",
+          "82回：在府中危机下互相扶持",
+          "83回：面对现实困境做出内心抉择，感情升华为精神共同体"
+        ]
+      },
+      {
+        "name": "贾府衰败线",
+        "priority": "primary",
+        "chapters": [
+          81,
+          82,
+          83
+        ],
+        "arc": "隐伏危机→迹象累积→全面爆发→衰败趋势初显",
+        "turning_points": [
+          "81回：暗示财政困境和权势动摇",
+          "82回：人员流失、官场压力加剧",
+          "83回：外部打击导致府中经济失衡，权力地位动摇"
+        ]
+      },
+      {
+        "name": "宝钗处境线",
+        "priority": "secondary",
+        "chapters": [
+          81,
+          82,
+          83
+        ],
+        "arc": "稳重应对→夹在情感与家族之间→反思抉择→淡出核心斗争",
+        "turning_points": [
+          "81回：试图调和宝黛关系",
+          "82回：家族危机使她必须承担更多责任",
+          "83回：选择自保并支持宝黛精神解脱"
+        ]
+      },
+      {
+        "name": "人物觉醒线",
+        "priority": "secondary",
+        "chapters": [
+          81,
+          82,
+          83
+        ],
+        "arc": "隐约感知危机→现实压力下反思→精神升华→接受必然走势",
+        "turning_points": [
+          "81回：宝玉开始思考尘世的虚幻",
+          "82回：黛玉认识到爱情之外的责任",
+          "83回：主要人物在困境中完成心灵转化"
+        ]
+      }
+    ],
+    "timeline": {
+      "time_span": "大约跨越1年左右的时间，从初春到次年初秋。",
+      "key_nodes": [
+        {
+          "time": "初春（81回）",
+          "event": "宝黛在春景中重逢，府中风光尚存，但已露不安之象。"
+        },
+        {
+          "time": "仲夏（82回）",
+          "event": "府中事务频现瑕疵，外界压力加大，情感与现实相互冲击。"
+        },
+        {
+          "time": "初秋（83回）",
+          "event": "重大危机爆发，人物完成精神的抉择与觉醒，衰败不可逆。"
+        }
+      ]
+    }
+  },
+  "chapters": [
+    {
+      "chapter_title": {
+        "first_part": "秋庭试茗邀素友",
+        "second_part": "绣阁铺香待新宾"
+      },
+      "main_characters": [
+        {
+          "name": "贾宝玉",
+          "importance": "primary",
+          "emotional_arc": "因清谈雅集而心绪宁和"
+        },
+        {
+          "name": "林黛玉",
+          "importance": "primary",
+          "emotional_arc": "在闲话与诗兴中稍解郁结"
+        },
+        {
+          "name": "薛宝钗",
+          "importance": "primary",
+          "emotional_arc": "温婉调和众人情绪，暗自留心局势"
+        },
+        {
+          "name": "探春",
+          "importance": "secondary",
+          "emotional_arc": "筹划秋宴，思虑家务纤细周到"
+        }
+      ],
+      "plot_points": [
+        {
+          "sequence": 1,
+          "event": "探春筹备秋日品茗雅集，邀宝玉、黛玉等人",
+          "location": "大观园秋景庭院",
+          "participants": [
+            "探春",
+            "贾宝玉",
+            "林黛玉",
+            "薛宝钗"
+          ]
+        },
+        {
+          "sequence": 2,
+          "event": "众人赏景品茗，宝玉引诗兴，黛玉随口吟咏",
+          "location": "庭院凉亭",
+          "participants": [
+            "贾宝玉",
+            "林黛玉",
+            "薛宝钗"
+          ]
+        },
+        {
+          "sequence": 3,
+          "event": "宝钗巧言缓解黛玉与宝玉微妙情绪",
+          "location": "庭院凉亭",
+          "participants": [
+            "薛宝钗",
+            "贾宝玉",
+            "林黛玉"
+          ]
+        },
+        {
+          "sequence": 4,
+          "event": "宴后探春暗记宾客言语，预感园中将有变化",
+          "location": "探春房中",
+          "participants": [
+            "探春"
+          ]
+        }
+      ],
+      "literary_elements": {
+        "poetry_count": 1,
+        "symbolism": [
+          "秋景寓园运渐变",
+          "茶香比友情清淡隽永"
+        ],
+        "foreshadowing": [
+          "园中人事将起波澜",
+          "黛玉健康暗伏隐患"
+        ]
+      },
+      "connections": {
+        "previous": "承接上回日常闲话，以雅集引人入境",
+        "next": "铺垫园中矛盾渐显，为后续纷争作势"
+      },
+      "chapter_number": 81
+    },
+    {
+      "chapter_title": {
+        "first_part": "花亭夜话听秋雨",
+        "second_part": "竹榭清吟对月华"
+      },
+      "main_characters": [
+        {
+          "name": "贾宝玉",
+          "importance": "primary",
+          "emotional_arc": "由闲适入幽思，渐生感慨"
+        },
+        {
+          "name": "林黛玉",
+          "importance": "primary",
+          "emotional_arc": "由诗兴盎然而转入清冷孤意"
+        },
+        {
+          "name": "薛宝钗",
+          "importance": "secondary",
+          "emotional_arc": "由端庄静观到暗生关切"
+        },
+        {
+          "name": "探春",
+          "importance": "secondary",
+          "emotional_arc": "由雅集主持到暗暗感叹人事无常"
+        }
+      ],
+      "plot_points": [
+        {
+          "sequence": 1,
+          "event": "夜雨初霁，众人移步至花亭续话秋景",
+          "location": "花亭",
+          "participants": [
+            "贾宝玉",
+            "林黛玉",
+            "薛宝钗",
+            "探春"
+          ]
+        },
+        {
+          "sequence": 2,
+          "event": "宝玉提及昔日秋游，黛玉吟诗抒怀",
+          "location": "花亭",
+          "participants": [
+            "贾宝玉",
+            "林黛玉"
+          ]
+        },
+        {
+          "sequence": 3,
+          "event": "宝钗以月为喻宽慰黛玉，气氛稍缓",
+          "location": "竹榭",
+          "participants": [
+            "薛宝钗",
+            "林黛玉",
+            "贾宝玉"
+          ]
+        },
+        {
+          "sequence": 4,
+          "event": "探春感叹季节流转、人事易变，暗生未来筹虑",
+          "location": "竹榭",
+          "participants": [
+            "探春",
+            "贾宝玉",
+            "薛宝钗",
+            "林黛玉"
+          ]
+        }
+      ],
+      "literary_elements": {
+        "poetry_count": 1,
+        "symbolism": [
+          "秋雨象征离愁",
+          "明月象征团圆与缺憾"
+        ],
+        "foreshadowing": [
+          "黛玉身子愈虚的暗示",
+          "探春有远行之意"
+        ]
+      },
+      "connections": {
+        "previous": "承接上回秋日品茗雅集之余情",
+        "next": "铺垫下回探春外嫁与黛玉病情加重"
+      },
+      "chapter_number": 82
+    },
+    {
+      "chapter_title": {
+        "first_part": "曲径深谈悲往事",
+        "second_part": "花窗浅笑话秋心"
+      },
+      "main_characters": [
+        {
+          "name": "贾宝玉",
+          "importance": "primary",
+          "emotional_arc": "由追忆旧游转入感伤离情"
+        },
+        {
+          "name": "林黛玉",
+          "importance": "primary",
+          "emotional_arc": "由含蓄吟咏转为低眉沉思"
+        },
+        {
+          "name": "薛宝钗",
+          "importance": "secondary",
+          "emotional_arc": "由温婉劝慰转为隐忧暗生"
+        },
+        {
+          "name": "探春",
+          "importance": "secondary",
+          "emotional_arc": "由静听入神到若有所悟"
+        }
+      ],
+      "plot_points": [
+        {
+          "sequence": 1,
+          "event": "花亭散后，众人移至曲径旁廊续谈秋景与往事",
+          "location": "曲径旁廊",
+          "participants": [
+            "贾宝玉",
+            "林黛玉",
+            "薛宝钗",
+            "探春"
+          ]
+        },
+        {
+          "sequence": 2,
+          "event": "宝玉忆起往年同游之人，多已离散，感慨无常",
+          "location": "廊下石凳",
+          "participants": [
+            "贾宝玉",
+            "林黛玉"
+          ]
+        },
+        {
+          "sequence": 3,
+          "event": "黛玉以诗暗喻人生如落叶，宝钗微笑劝慰却藏不安",
+          "location": "花窗边",
+          "participants": [
+            "林黛玉",
+            "薛宝钗",
+            "贾宝玉"
+          ]
+        },
+        {
+          "sequence": 4,
+          "event": "探春沉思府中变故，似有预感，话题渐收束于夜半",
+          "location": "庭院深处",
+          "participants": [
+            "探春",
+            "贾宝玉",
+            "林黛玉"
+          ]
+        }
+      ],
+      "literary_elements": {
+        "poetry_count": 1,
+        "symbolism": [
+          "落叶象征离散",
+          "曲径象征人生曲折"
+        ],
+        "foreshadowing": [
+          "府内将有变故",
+          "人物关系暗生隔阂"
+        ]
+      },
+      "connections": {
+        "previous": "承接夜雨清谈秋景情绪渐浓",
+        "next": "铺垫府中风波与人物命运转折"
+      },
+      "chapter_number": 83
+    }
+  ],
+  "character_distribution": {
+    "character_distribution": {
+      "贾宝玉": {
+        "total_appearances": 3,
+        "primary_role_chapters": [
+          81,
+          82,
+          83
+        ],
+        "secondary_role_chapters": [],
+        "minor_role_chapters": [],
+        "absent_chapters": []
+      },
+      "林黛玉": {
+        "total_appearances": 3,
+        "primary_role_chapters": [
+          81,
+          82,
+          83
+        ],
+        "secondary_role_chapters": [],
+        "minor_role_chapters": [],
+        "absent_chapters": []
+      },
+      "薛宝钗": {
+        "total_appearances": 3,
+        "primary_role_chapters": [
+          81
+        ],
+        "secondary_role_chapters": [
+          82,
+          83
+        ],
+        "minor_role_chapters": [],
+        "absent_chapters": []
+      },
+      "探春": {
+        "total_appearances": 3,
+        "primary_role_chapters": [],
+        "secondary_role_chapters": [
+          81,
+          82,
+          83
+        ],
+        "minor_role_chapters": [],
+        "absent_chapters": []
+      }
+    },
+    "total_characters": 4,
+    "distribution_balance": 1.0
+  },
+  "validation": {
+    "is_consistent": false,
+    "issues": [
+      "第81回缺少主要情节点",
+      "第82回缺少主要情节点",
+      "第83回缺少主要情节点"
+    ],
+    "suggestions": [
+      "第81回与第82回的衔接可以更明确",
+      "第82回与第83回的衔接可以更明确"
+    ],
+    "total_checks": 5,
+    "passed_checks": 2
+  }
+}
