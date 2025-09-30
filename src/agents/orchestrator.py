@@ -293,7 +293,19 @@ class OrchestratorAgent(BaseAgent):
 
     async def _assess_quality(self, content: Any) -> AgentResult:
         """质量评估"""
-        return await self.agents['quality_checker'].process({"content": content})
+        # 处理content数据格式
+        if isinstance(content, dict):
+            # 如果是字典格式，提取chapters字段
+            chapters = content.get("chapters", [])
+            if chapters:
+                # 将所有章节内容合并为一个字符串进行评估
+                content_text = "\n\n".join(chapters)
+            else:
+                content_text = ""
+        else:
+            content_text = str(content) if content else ""
+        
+        return await self.agents['quality_checker'].process({"content": content_text})
 
     async def _format_output(self, results: Dict[str, Any]) -> AgentResult:
         """格式化输出结果"""
