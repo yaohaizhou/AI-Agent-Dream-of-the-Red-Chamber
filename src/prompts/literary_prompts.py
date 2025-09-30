@@ -288,6 +288,236 @@ class LiteraryPrompts:
                 temperature=0.6,
                 max_tokens=2000,
                 description="用户需求处理，提供友好的交互和创作指导"
+            ),
+
+            "chapter_planner_global": PromptTemplate(
+                name="章节编排大师",
+                system_message="""你是一位精通《红楼梦》的文学规划大师，擅长构建宏大的叙事框架。
+
+你的专长：
+1. **叙事结构设计**：善于将长篇故事划分为起承转合的阶段
+2. **剧情线编织**：能够设计多条并行的剧情线，交织出复杂的故事网络
+3. **节奏把控**：精准把握情节发展的快慢节奏，张弛有度
+4. **整体规划**：从全局视野规划40回的完整架构
+
+设计原则：
+- 四阶段结构：铺垫(setup)、发展(development)、高潮(climax)、结局(resolution)
+- 多线并行：宝黛爱情线、贾府衰败线、人物成长线等
+- 承前启后：既要衔接前80回，又要引向用户期望的结局
+- 张弛有度：避免情节过于密集或过于松散""",
+                user_template="""请为红楼梦第{start_chapter}-{end_chapter}回（共{chapters_count}回）设计完整的全局叙事结构。
+
+## 背景信息
+**总体策略**: {overall_strategy}
+**用户期望结局**: {user_ending}
+**前80回知识**: {knowledge_summary}
+
+## 设计任务
+
+### 1. 叙事阶段划分
+请将{chapters_count}回划分为4个阶段，为每个阶段：
+- 指定包含的章节号
+- 描述该阶段的叙事目标
+- 说明该阶段的情感基调
+
+### 2. 主要剧情线设计
+请设计3-5条主要剧情线，为每条剧情线：
+- 命名（如"宝黛爱情线"）
+- 设定优先级（primary/secondary）
+- 列出涉及的章节号
+- 描述叙事弧线（开始→发展→高潮→结局）
+- 标注关键转折点
+
+### 3. 时间线规划
+- 说明40回大约跨越的时间范围
+- 标注重要的时间节点
+
+## 输出格式
+请严格按照以下JSON格式输出（确保是合法的JSON）：
+
+```json
+{{
+  "narrative_phases": {{
+    "setup": {{
+      "chapters": [81, 82, 83, 84, 85],
+      "description": "铺垫阶段的描述",
+      "emotional_tone": "情感基调"
+    }},
+    "development": {{
+      "chapters": [...],
+      "description": "发展阶段的描述",
+      "emotional_tone": "情感基调"
+    }},
+    "climax": {{
+      "chapters": [...],
+      "description": "高潮阶段的描述",
+      "emotional_tone": "情感基调"
+    }},
+    "resolution": {{
+      "chapters": [...],
+      "description": "结局阶段的描述",
+      "emotional_tone": "情感基调"
+    }}
+  }},
+  "major_plotlines": [
+    {{
+      "id": "plotline_001",
+      "name": "剧情线名称",
+      "priority": "primary",
+      "chapters_involved": [...],
+      "narrative_arc": "开始→发展→高潮→结局",
+      "key_turning_points": [
+        {{"chapter": 92, "event": "关键事件描述"}},
+        ...
+      ]
+    }}
+  ],
+  "timeline": {{
+    "time_span": "时间跨度描述",
+    "key_moments": [
+      {{"chapter": 章节号, "time": "时间点", "event": "事件"}}
+    ]
+  }}
+}}
+```
+
+请确保：
+1. 所有章节号都在{start_chapter}-{end_chapter}范围内
+2. 四个阶段覆盖全部{chapters_count}回，不重复不遗漏
+3. 主要剧情线要最终收束于用户期望的结局
+4. 输出纯JSON格式，不要包含其他文字""",
+                temperature=0.7,
+                max_tokens=4000,
+                description="全局章节结构规划，设计40回的整体框架"
+            ),
+
+            "chapter_planner_detail": PromptTemplate(
+                name="章节设计师",
+                system_message="""你是一位精通《红楼梦》的章节设计师，擅长为每一回设计详细的内容规划。
+
+你的能力：
+1. **回目创作**：能设计对仗工整、富有意境的回目标题
+2. **角色编排**：善于选择合适的角色组合，安排恰当的戏份
+3. **情节设计**：能设计3-5个承上启下的情节点
+4. **文学元素**：懂得安排诗词、象征、伏笔等古典文学元素
+
+设计要求：
+- 回目要对仗工整，体现本回主要内容
+- 每回3-5个主要角色，明确各自的重要程度和情感变化
+- 每回3-5个情节点，确保承上启下
+- 融入诗词、象征、伏笔等文学元素
+- 标注与前后回的衔接关系""",
+                user_template="""请为《红楼梦》第{chapter_num}回设计详细的内容规划。
+
+## 上下文信息
+**所处阶段**: {narrative_phase}
+**全局结构**: {global_context}
+**相关剧情线**: {related_plotlines}
+**上回概要**: {previous_chapter_summary}
+**人物知识**: {knowledge_base}
+
+## 设计任务
+
+### 1. 回目标题
+- 设计对仗工整的上下联
+- 体现本回的主要内容
+- 符合红楼梦的文学风格
+
+### 2. 主要角色（3-5位）
+为每位角色说明：
+- 在本回的重要程度（primary/secondary/minor）
+- 主要场景和行动
+- 情感变化弧线
+
+### 3. 主要情节点（3-5个）
+为每个情节点说明：
+- 事件描述
+- 类型（daily_life/conflict/turning_point/climax/emotional_moment）
+- 地点
+- 参与者
+- 在整体故事中的意义
+
+### 4. 文学元素
+- 需要的诗词数量和主题
+- 象征手法
+- 伏笔设置
+- 情绪走向
+
+### 5. 前后衔接
+- 如何承接上一回
+- 如何为下一回做铺垫
+
+## 输出格式
+请严格按照以下JSON格式输出（确保是合法的JSON）：
+
+```json
+{{
+  "chapter_title": {{
+    "first_part": "上联",
+    "second_part": "下联"
+  }},
+  "narrative_phase": "{narrative_phase}",
+  "position_in_phase": "第X回/共Y回",
+  "main_characters": [
+    {{
+      "name": "角色名",
+      "role": "protagonist/antagonist/supporting",
+      "importance": "primary/secondary/minor",
+      "key_scenes": [
+        {{
+          "scene_name": "场景名",
+          "emotional_state": "情感状态",
+          "interactions": ["互动对象1", "互动对象2"]
+        }}
+      ],
+      "emotional_arc": "情感变化描述",
+      "character_development": "性格发展描述"
+    }}
+  ],
+  "main_plot_points": [
+    {{
+      "sequence": 1,
+      "event": "事件描述",
+      "type": "类型",
+      "duration": "持续时间",
+      "location": "地点",
+      "participants": ["参与者1", "参与者2"],
+      "significance": "意义"
+    }}
+  ],
+  "subplot_connections": [
+    {{
+      "plotline_id": "plotline_001",
+      "plotline_name": "剧情线名称",
+      "progress_description": "在本回中的进展"
+    }}
+  ],
+  "literary_elements": {{
+    "poetry_count": 数字,
+    "poetry_themes": ["主题1", "主题2"],
+    "symbolism": ["象征1", "象征2"],
+    "foreshadowing": ["伏笔1", "伏笔2"],
+    "mood_progression": "情绪走向描述",
+    "writing_style_notes": "写作风格提示"
+  }},
+  "chapter_metadata": {{
+    "estimated_length": 2500,
+    "difficulty_level": "easy/medium/hard",
+    "key_vocabulary": ["关键词1", "关键词2"],
+    "previous_chapter_link": "承接上回的描述",
+    "next_chapter_setup": "为下回铺垫的描述"
+  }}
+}}
+```
+
+请确保：
+1. 回目标题对仗工整，富有意境
+2. 主要角色3-5位，角色选择合理
+3. 情节点3-5个，承上启下
+4. 输出纯JSON格式，不要包含其他文字""",
+                temperature=0.7,
+                max_tokens=3000,
+                description="单章详细规划，设计每一回的具体内容"
             )
         }
 
