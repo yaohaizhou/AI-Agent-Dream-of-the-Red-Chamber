@@ -566,3 +566,152 @@ Content:
       "participants": ["林黛玉", "紫鹃"],
       "significance": "为黛玉离世作情感铺垫，深化悲剧色彩"
     }
+
+
+=== chapter_81 - 2026-01-31 06:31:47.982778 ===
+Error: Expecting ',' delimiter: line 37 column 45 (char 817)
+Content:
+{
+  "chapter_title": {
+    "first_part": "奉严亲入塾承家训",
+    "second_part": "对知己明心定情缘"
+  },
+  "main_characters": [
+    {
+      "name": "贾宝玉",
+      "importance": "primary",
+      "emotional_arc": "从顺从父命入家塾，到与黛玉互诉衷肠，确立彼此心意"
+    },
+    {
+      "name": "林黛玉",
+      "importance": "primary",
+      "emotional_arc": "从往日的忧惧猜忌，到此回确信宝玉真情，心结得解"
+    },
+    {
+      "name": "贾政",
+      "importance": "secondary",
+      "emotional_arc": "一改严苛态度，语重心长教导宝玉，显露出对家族复兴的期望"
+    },
+    {
+      "name": "探春",
+      "importance": "secondary",
+      "emotional_arc": "主持闺阁雅集，与姐妹们钓鱼作乐，展现才情与情趣"
+    }
+  ],
+  "plot_points": [
+    {
+      "sequence": 1,
+      "event": "贾政唤宝玉至书房，叮嘱其入家塾后勤勉读书，莫负家族期望",
+      "location": "荣府正厅",
+      "participants": ["贾政", "贾宝玉", "王夫人"]
+    },
+    {
+      "sequence": 2,
+      "event": "宝玉入学前至潇湘馆与黛玉辞别，二人互诉衷肠，黛玉终释怀"金玉良缘"之虑",
+      "location": "潇湘馆",
+      "participants": ["贾宝玉", "林黛玉", "紫鹃"]
+    },
+    {
+      "sequence": 3,
+      "event": "探春、李纨、惜春、邢岫烟相约园中钓鱼，占卜旺相，笑语盈盈",
+      "location": "大观园池畔",
+      "participants": ["探春", "李纨", "惜春", "邢岫烟"]
+    },
+    {
+      "sequence": 4,
+      "event": "宝玉入家塾拜见老师贾代儒，正式开始攻读八股时文",
+      "location": "家塾",
+      ["贾宝玉", "贾代儒", "众同窗"]
+    }
+  ],
+  "literary_elements": {
+    "poetry_count": 1,
+    "symbolism": [
+      "游鱼象征闺阁女子的命运归宿",
+      "入家塾象征贾府对科举仕途的重新重视"
+    ],
+    "foreshadowing": [
+      "宝黛互定心意为后续公开求婚埋下伏笔",
+      "贾政态度转变暗示贾府将有复兴之象"
+    ]
+  },
+  "connections": {
+    "previous": "承接第80回日常场景，开启宝玉入家塾的新阶段",
+    "next": "铺垫第82回宝黛感情进一步发展，以及贾府教育后代的相关情节"
+  }
+}
+
+
+=== chapter_81 - 2026-01-31 06:38:06.010372 ===
+Error: Invalid control character at: line 60 column 21 (char 1291)
+Content:
+{
+  "chapter_title": {
+    "first_part": "秋爽斋偶结海棠社",
+    "second_part": "怡红院夜话金玉缘"
+  },
+  "main_characters": [
+    {
+      "name": "贾宝玉",
+      "importance": "primary",
+      "emotional_arc": "从对金玉缘的芥蒂中释怀，转而坚定对木石前盟的信念"
+    },
+    {
+      "name": "林黛玉",
+      "importance": "primary",
+      "emotional_arc": "从试探猜忌走向确信宝玉真心，二人心意渐通"
+    },
+    {
+      "name": "薛宝钗",
+      "importance": "secondary",
+      "emotional_arc": "察觉宝玉黛玉之情，选择退让成全，心中渐释"
+    },
+    {
+      "name": "贾探春",
+      "importance": "secondary",
+      "emotional_arc": "主持诗社，展现理家才能，为贾府复兴出力"
+    }
+  ],
+  "plot_points": [
+    {
+      "sequence": 1,
+      "event": "探春重开诗社，众人于秋爽斋雅集赋诗",
+      "location": "秋爽斋",
+      "participants": ["贾探春", "林黛玉", "薛宝钗", "贾宝玉", "李纨"]
+    },
+    {
+      "sequence": 2,
+      "event": "黛玉作诗暗寓心事，宝玉听出深情，当众维护",
+      "location": "秋爽斋",
+      "participants": ["林黛玉", "贾宝玉", "薛宝钗"]
+    },
+    {
+      "sequence": 3,
+      "event": "宝钗夜访怡红院，主动与宝玉谈及金玉缘分",
+      "location": "怡红院",
+      "participants": ["薛宝钗", "贾宝玉"]
+    },
+    {
+      "sequence": 4,
+      "event": "宝玉向黛玉表明心迹，二人互诉衷肠，誓言既坚",
+      "location": "潇湘馆",
+      "participants": ["贾宝玉", "林黛玉"]
+    }
+  ],
+  "literary_elements": {
+    "poetry_count": 2,
+    "symbolism": [
+      "海棠诗象征黛玉才情与薄命",
+      "金玉良缘的提及暗示缘分已尽"
+    ],
+    "foreshadowing [
+      "诗社重开暗示贾府将有转机",
+      "宝钗退让为后文嫁入贾府伏笔",
+      "探春理家才能为后续主持家务铺垫"
+    ]
+  },
+  "connections": {
+    "previous": "承接第80回日常余绪，众人渐从迎春之悲中走出",
+    "next": "铺垫第82回宝玉上学、黛玉病重等情节，开启贾府新篇章"
+  }
+}
