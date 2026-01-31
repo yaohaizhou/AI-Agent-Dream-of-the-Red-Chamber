@@ -203,26 +203,167 @@ class QualityCheckerAgent(BaseAgent):
         try:
             # 获取人物信息
             characters = context.get("characters", {})
+            if not characters:
+                # 如果没有上下文人物信息，尝试从内容中推断
+                characters = self._infer_characters_from_content(content)
 
             # 检查主要人物的刻画
             score = 5.0  # 基础分数
+            evaluated_characters = 0
 
             for char_name, char_info in characters.items():
                 if char_name in content:
+                    evaluated_characters += 1
+                    
                     # 检查性格特征是否符合
                     personality_traits = char_info.get("性格", "")
-                    if any(trait in content for trait in personality_traits.split()):
-                        score += 0.5
+                    if personality_traits:
+                        trait_matches = self._check_personality_match(content, char_name, personality_traits)
+                        score += trait_matches * 0.8  # 性格匹配权重较高
 
-                    # 检查对话是否符合人物身份
-                    if self._check_dialogue_consistency(content, char_name, char_info):
-                        score += 0.3
+                    # 检查行为逻辑是否符合人物设定
+                    behavior_matches = self._check_behavior_consistency(content, char_name, char_info)
+                    score += behavior_matches * 0.6
 
-            return min(score, 10.0)
+                    # 检查对话风格是否符合人物身份
+                    dialogue_matches = self._check_dialogue_consistency(content, char_name, char_info)
+                    score += dialogue_matches * 0.7
+
+                    # 检查人物与其他角色的互动是否符合设定
+                    relationship_matches = self._check_relationship_consistency(content, char_name, characters)
+                    score += relationship_matches * 0.5
+
+            # 如果没有找到任何主要人物，扣分
+            if evaluated_characters == 0 and characters:
+                score -= 2.0
+
+            return min(max(score, 0.0), 10.0)  # 确保分数在0-10之间
 
         except Exception as e:
             print(f"人物评估失败: {e}")
+            import traceback
+            print(f"错误详情:\n{traceback.format_exc()}")
             return 6.0  # 默认中等分数
+
+    def _infer_characters_from_content(self, content: str) -> Dict[str, Dict[str, str]]:
+        """
+        从内容中推断人物信息
+        """
+        # 红楼梦主要人物及其典型特征
+        known_characters = {
+            "贾宝玉": {
+                "性格": "纯真善良 叛逆封建 礼教反对者 情感细腻 尊重女性",
+                "典型行为": "关心女性 逃避仕途经济 喜欢诗词",
+                "语言特点": "温和体贴 对女性尊重 有时叛逆"
+            },
+            "林黛玉": {
+                "性格": "聪慧敏感 多愁善感 才华横溢 个性率真",
+                "典型行为": "写诗作词 体弱多病 多疑敏感",
+                "语言特点": "机智尖锐 带有诗意 有时尖刻"
+            },
+            "薛宝钗": {
+                "性格": "端庄贤惠 世故圆通 大方得体 识大体",
+                "典型行为": "劝导他人 注重礼仪 处事稳重",
+                "语言特点": "温和理性 劝导性强 符合礼教"
+            },
+            "王熙凤": {
+                "性格": "精明能干 权势欲强 口才出众 心机深沉",
+                "典型行为": "管理家务 施展权术 言语犀利",
+                "语言特点": "爽朗直率 带有权威性 机智幽默"
+            },
+            "贾母": {
+                "性格": "慈祥和蔼 家族权威 尊贵威严",
+                "典型行为": "疼爱孙辈 决定家族大事",
+                "语言特点": "慈祥关爱 威严中有温情"
+            }
+        }
+
+        # 从内容中检测出现的人物
+        detected_characters = {}
+        for name, traits in known_characters.items():
+            if name in content:
+                detected_characters[name] = traits
+
+        return detected_characters
+
+    def _check_personality_match(self, content: str, char_name: str, personality_traits: str) -> float:
+        """
+        检查人物性格是否与设定匹配
+        返回0-1之间的匹配度
+        """
+        traits = personality_traits.lower().split()
+        matches = 0
+        total_traits = len(traits)
+
+        for trait in traits:
+            # 检查内容中是否体现了该特质
+            if trait in content.lower():
+                matches += 1
+            # 也可以使用更复杂的匹配逻辑，比如检查相关行为描述
+
+        return matches / total_traits if total_traits > 0 else 0.0
+
+    def _check_behavior_consistency(self, content: str, char_name: str, char_info: Dict[str, str]) -> float:
+        """
+        检查人物行为是否与设定一致
+        返回0-1之间的匹配度
+        """
+        typical_behaviors = char_info.get("典型行为", "")
+        if not typical_behaviors:
+            return 0.0
+
+        behaviors = typical_behaviors.split()
+        matches = 0
+        total_behaviors = len(behaviors)
+
+        content_lower = content.lower()
+        for behavior in behaviors:
+            if behavior in content_lower:
+                matches += 1
+
+        return matches / total_behaviors if total_behaviors > 0 else 0.0
+
+    def _check_dialogue_consistency(self, content: str, char_name: str, char_info: Dict[str, str]) -> float:
+        """
+        检查对话是否符合人物身份
+        返回0-1之间的匹配度
+        """
+        # 查找该人物的对话
+        dialogue_matches = 0
+        total_checks = 0
+
+        # 检查语言特点
+        language_traits = char_info.get("语言特点", "")
+        if language_traits:
+            traits = language_traits.split()
+            for trait in traits:
+                if trait in content:
+                    dialogue_matches += 1
+                total_checks += 1
+
+        return dialogue_matches / total_checks if total_checks > 0 else 0.0
+
+    def _check_relationship_consistency(self, content: str, char_name: str, all_characters: Dict[str, Dict[str, str]]) -> float:
+        """
+        检查人物关系是否符合设定
+        返回0-1之间的匹配度
+        """
+        if char_name not in all_characters:
+            return 0.0
+
+        char_info = all_characters[char_name]
+        relationship_matches = 0
+        total_checks = 0
+
+        # 检查与其他角色的互动是否符合设定
+        for other_char, other_info in all_characters.items():
+            if char_name != other_char and other_char in content:
+                # 检查互动方式是否符合人物设定
+                # 这里可以添加更复杂的交互分析逻辑
+                relationship_matches += 0.5  # 简单给予一半的匹配度
+                total_checks += 1
+
+        return relationship_matches / total_checks if total_checks > 0 else 0.0
 
     def _check_dialogue_consistency(self, content: str, char_name: str, char_info: Dict) -> bool:
         """检查对话一致性"""

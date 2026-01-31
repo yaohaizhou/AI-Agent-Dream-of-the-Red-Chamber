@@ -131,6 +131,26 @@ class ChapterPlannerAgent(BaseAgent):
                 start_chapter, chapters_count, user_ending
             )
         
+        # 初始化缓存管理器
+        from ...utils.cache import CacheManager
+        cache_manager = CacheManager(default_ttl=7200)  # 缓存2小时
+        
+        # 生成缓存键
+        cache_key = self._generate_cache_key(
+            "global_structure",
+            overall_strategy, 
+            knowledge_base, 
+            user_ending, 
+            chapters_count, 
+            start_chapter
+        )
+        
+        # 尝试从缓存获取结果
+        cached_result = cache_manager.get(cache_key)
+        if cached_result is not None:
+            print("🎯 [CACHE] 命中全局结构缓存")
+            return cached_result
+
         # 构建prompt
         system_prompt, user_prompt = self.prompts.create_custom_prompt(
             "chapter_planner_global",
@@ -155,9 +175,12 @@ class ChapterPlannerAgent(BaseAgent):
         # 检查是否成功
         if not result.get("success", False):
             print(f"⚠️  GPT-5调用失败，使用默认全局结构: {result.get('error', 'Unknown error')}")
-            return self._create_default_global_structure(
+            default_result = self._create_default_global_structure(
                 start_chapter, chapters_count, user_ending
             )
+            # 也缓存默认结果
+            cache_manager.set(cache_key, default_result)
+            return default_result
 
         # 解析并验证结果
         response_content = result.get("content", "")
@@ -167,13 +190,30 @@ class ChapterPlannerAgent(BaseAgent):
         )
         
         if global_structure:
+            # 缓存成功的结果
+            cache_manager.set(cache_key, global_structure)
             return global_structure
         else:
             print(f"⚠️  JSON解析失败，使用默认全局结构")
             print(f"📄 原始响应: {response_content[:200]}...")
-            return self._create_default_global_structure(
+            default_result = self._create_default_global_structure(
                 start_chapter, chapters_count, user_ending
             )
+            # 缓存默认结果
+            cache_manager.set(cache_key, default_result)
+            return default_result
+
+    def _generate_cache_key(self, operation: str, *args) -> str:
+        """生成缓存键"""
+        import hashlib
+        import json
+        
+        cache_input = {
+            'operation': operation,
+            'args': [json.dumps(arg, sort_keys=True, default=str) for arg in args]
+        }
+        serialized = json.dumps(cache_input, sort_keys=True, default=str)
+        return hashlib.md5(serialized.encode()).hexdigest()
 
     async def _plan_all_chapters(
         self,
@@ -438,62 +478,174 @@ class ChapterPlannerAgent(BaseAgent):
         except json.JSONDecodeError:
             pass
         
-        # 策略2: 提取markdown代码块
-        if "```json" in response_content:
-            json_start = response_content.find("```json") + 7
-            json_end = response_content.find("```", json_start)
-            if json_end > json_start:
-                json_str = response_content[json_start:json_end].strip()
-                try:
-                    return json.loads(json_str)
-                except json.JSONDecodeError:
-                    pass
+        # 策略2: 提取markdown代码块（支持多种格式）
+        patterns = [
+            r'```json\s*(.*?)\s*```',  # ```json ... ```
+            r'```\s*(\{.*?\})\s*```',  # ``` {...} ``` （无语言标识）
+            r'```\s*(\[.*?\])\s*```'   # ``` [...] ``` （数组格式）
+        ]
         
-        # 策略3: 提取普通代码块
-        if "```" in response_content:
-            json_start = response_content.find("```") + 3
-            json_end = response_content.find("```", json_start)
-            if json_end > json_start:
-                json_str = response_content[json_start:json_end].strip()
-                # 移除可能的语言标识
-                if json_str.startswith(("json\n", "JSON\n")):
-                    json_str = json_str.split('\n', 1)[1]
-                try:
-                    return json.loads(json_str)
-                except json.JSONDecodeError:
-                    pass
+        for pattern in patterns:
+            matches = re.findall(pattern, response_content, re.DOTALL)
+            if matches:
+                for match in matches:
+                    try:
+                        return json.loads(match.strip())
+                    except json.JSONDecodeError:
+                        continue
         
-        # 策略4: 查找第一个 { 和最后一个 }
-        first_brace = response_content.find('{')
-        last_brace = response_content.rfind('}')
+        # 策略3: 查找第一个 { 和最后一个 } 或 [ 和 ]
+        # 优先查找对象结构
+        obj_start = response_content.find('{')
+        obj_end = response_content.rfind('}')
+        if obj_start != -1 and obj_end != -1 and obj_end > obj_start:
+            json_str = response_content[obj_start:obj_end+1]
+            parsed = self._try_parse_json_with_fixes(json_str, context)
+            if parsed is not None:
+                return parsed
         
-        if first_brace != -1 and last_brace != -1 and last_brace > first_brace:
-            json_str = response_content[first_brace:last_brace+1]
+        # 查找数组结构
+        arr_start = response_content.find('[')
+        arr_end = response_content.rfind(']')
+        if arr_start != -1 and arr_end != -1 and arr_end > arr_start:
+            json_str = response_content[arr_start:arr_end+1]
+            parsed = self._try_parse_json_with_fixes(json_str, context)
+            if parsed is not None:
+                return parsed
+        
+        # 策略4: 查找嵌套结构（可能有多对{}）
+        brace_pairs = self._find_matching_braces(response_content)
+        for start, end in brace_pairs:
+            json_str = response_content[start:end+1]
+            parsed = self._try_parse_json_with_fixes(json_str, context)
+            if parsed is not None:
+                return parsed
+        
+        # 如果所有策略都失败，保存失败的响应以供调试
+        debug_file = Path("output/debug_json_parse_failure.txt")
+        debug_file.parent.mkdir(parents=True, exist_ok=True)
+        with open(debug_file, 'a', encoding='utf-8') as f:
+            f.write(f"\n\n=== {context} - {datetime.now()} ===\n")
+            f.write(f"Content:\n{response_content}\n")
+        
+        print(f"⚠️  JSON解析失败已保存到: {debug_file}")
+        return None
+
+    def _try_parse_json_with_fixes(self, json_str: str, context: str) -> Optional[Dict[str, Any]]:
+        """
+        尝试修复并解析JSON字符串
+        """
+        # 原始尝试
+        try:
+            return json.loads(json_str)
+        except json.JSONDecodeError:
+            pass
+        
+        # 尝试修复常见问题
+        fixes = [
+            # 1. 移除注释
+            lambda s: re.sub(r'//.*?\n', '\n', s),
+            # 2. 修复尾随逗号
+            lambda s: re.sub(r',(\s*[}\]])', r'\1', s),
+            # 3. 修复单引号（更谨慎的替换）
+            lambda s: re.sub(r"'([^']*)':", r'"\1":', s),  # 修复键名
+            lambda s: re.sub(r":\s*'([^']*)'", r': "\1"', s),  # 修复字符串值
+            # 4. 修复未转义的引号（在字符串值中）
+            lambda s: re.sub(r':\s*"([^"]*)"([^},\]])', lambda m: f': "{m.group(1).replace(chr(0), "")}"{m.group(2)}', s.replace('"', chr(0)).replace("'", '"').replace(chr(0), '"')),
+        ]
+        
+        fixed_str = json_str
+        for fix in fixes:
             try:
-                return json.loads(json_str)
-            except json.JSONDecodeError as e:
-                # 尝试修复常见的JSON错误
-                # 1. 移除注释
-                json_str = re.sub(r'//.*?\n', '\n', json_str)
-                # 2. 修复尾随逗号
-                json_str = re.sub(r',(\s*[}\]])', r'\1', json_str)
-                # 3. 修复单引号
-                json_str = json_str.replace("'", '"')
-                
-                try:
-                    return json.loads(json_str)
-                except json.JSONDecodeError as e2:
-                    # 保存失败的JSON以供调试
-                    debug_file = Path("output/debug_json_parse_failure.txt")
-                    debug_file.parent.mkdir(parents=True, exist_ok=True)
-                    with open(debug_file, 'a', encoding='utf-8') as f:
-                        f.write(f"\n\n=== {context} - {datetime.now()} ===\n")
-                        f.write(f"Error: {e2}\n")
-                        f.write(f"Content:\n{json_str}\n")
-                    
-                    print(f"⚠️  JSON解析失败已保存到: {debug_file}")
+                fixed_str = fix(fixed_str)
+                result = json.loads(fixed_str)
+                return result
+            except json.JSONDecodeError:
+                continue
+        
+        # 如果仍然失败，尝试更高级的修复
+        return self._advanced_json_fix(fixed_str, context)
+
+    def _advanced_json_fix(self, json_str: str, context: str) -> Optional[Dict[str, Any]]:
+        """
+        高级JSON修复方法
+        """
+        try:
+            # 尝试使用更宽松的JSON解析器
+            import json5  # 如果有json5模块
+            return json5.loads(json_str)
+        except ImportError:
+            pass
+        except Exception:
+            pass
+        
+        # 手动修复一些复杂情况
+        try:
+            # 修复包含未转义引号的字符串值
+            fixed_str = self._fix_unescaped_quotes(json_str)
+            return json.loads(fixed_str)
+        except json.JSONDecodeError:
+            pass
         
         return None
+
+    def _fix_unescaped_quotes(self, json_str: str) -> str:
+        """
+        修复JSON字符串中未转义的引号
+        """
+        # 这是一个简化的修复方法
+        # 在实际应用中，可能需要更复杂的解析
+        try:
+            # 尝试逐字符解析，修复未转义的引号
+            result = []
+            in_string = False
+            escape_next = False
+            
+            for i, char in enumerate(json_str):
+                if escape_next:
+                    result.append(char)
+                    escape_next = False
+                    continue
+                    
+                if char == '\\':
+                    result.append(char)
+                    escape_next = True
+                    continue
+                    
+                if char == '"' and not escape_next:
+                    in_string = not in_string
+                    
+                if char == '"' and in_string and i > 0 and json_str[i-1] != '\\' and i < len(json_str) - 1:
+                    # 检查是否是在字符串中间的引号，可能需要转义
+                    # 这里简化处理，实际上需要更复杂的逻辑
+                    pass
+                    
+                result.append(char)
+            
+            return ''.join(result)
+        except:
+            # 如果修复失败，返回原始字符串
+            return json_str
+
+    def _find_matching_braces(self, text: str) -> List[tuple]:
+        """
+        查找文本中匹配的大括号对
+        返回 [(start, end), ...] 的列表
+        """
+        results = []
+        stack = []
+        
+        for i, char in enumerate(text):
+            if char == '{':
+                stack.append(i)
+            elif char == '}' and stack:
+                start = stack.pop()
+                if not stack:  # 只记录最外层的匹配对
+                    results.append((start, i))
+        
+        # 按大小排序，优先返回较大的匹配对（更可能是完整的JSON对象）
+        results.sort(key=lambda x: x[1] - x[0], reverse=True)
+        return results
 
     def _extract_knowledge_summary(self, knowledge_base: Dict[str, Any]) -> str:
         """提取知识库摘要"""

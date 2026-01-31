@@ -271,16 +271,88 @@ class OrchestratorAgent(BaseAgent):
         return True
 
     async def _parallel_preprocessing(self, input_data: Dict[str, Any]) -> tuple[AgentResult, AgentResult]:
-        """并行执行数据预处理和策略规划"""
-        # 模拟并行处理
-        preprocessing_task = self.agents['data_processor'].process(input_data)
-        strategy_task = self.agents['strategy_planner'].process(input_data)
+        """并行执行数据预处理和策略规划，带错误恢复"""
+        try:
+            # 并行处理，但设置超时和错误处理
+            preprocessing_task = asyncio.wait_for(
+                self.agents['data_processor'].process(input_data), 
+                timeout=60.0  # 设置60秒超时
+            )
+            strategy_task = asyncio.wait_for(
+                self.agents['strategy_planner'].process(input_data), 
+                timeout=60.0
+            )
 
-        preprocessing_result, strategy_result = await asyncio.gather(
-            preprocessing_task, strategy_task
-        )
+            preprocessing_result, strategy_result = await asyncio.gather(
+                preprocessing_task, 
+                strategy_task,
+                return_exceptions=True  # 允许单个任务失败
+            )
+
+            # 检查是否返回的是异常
+            if isinstance(preprocessing_result, Exception):
+                print(f"⚠️ 数据预处理任务异常: {preprocessing_result}")
+                preprocessing_result = self._create_fallback_result("data_processor", preprocessing_result)
+            
+            if isinstance(strategy_result, Exception):
+                print(f"⚠️ 策略规划任务异常: {strategy_result}")
+                strategy_result = self._create_fallback_result("strategy_planner", strategy_result)
+
+        except asyncio.TimeoutError:
+            print("⏰ 并行预处理超时，使用降级方案")
+            preprocessing_result = self._create_fallback_result("data_processor", "Timeout")
+            strategy_result = self._create_fallback_result("strategy_planner", "Timeout")
+        except Exception as e:
+            print(f"🚨 并行预处理严重错误: {e}")
+            preprocessing_result = self._create_fallback_result("data_processor", e)
+            strategy_result = self._create_fallback_result("strategy_planner", e)
 
         return preprocessing_result, strategy_result
+
+    def _create_fallback_result(self, agent_name: str, error: Exception) -> AgentResult:
+        """创建降级结果"""
+        print(f"🔄 [{agent_name}] 创建降级结果...")
+        
+        # 根据不同代理类型创建相应的降级数据
+        fallback_data = {}
+        
+        if agent_name == "data_processor":
+            # 数据预处理的降级数据
+            fallback_data = {
+                "characters": {
+                    "贾宝玉": {"性格": "纯真善良，反叛封建礼教", "现状": "经历诸多变故", "发展方向": "寻求精神解脱"},
+                    "林黛玉": {"性格": "聪慧敏感，多愁善感", "现状": "体弱多病", "发展方向": "坚持纯真爱情理想"},
+                    "薛宝钗": {"性格": "端庄贤惠，世故圆通", "现状": "深得贾府喜爱", "发展方向": "适应社会规范"}
+                },
+                "plot_structure": {
+                    "total_chapters": 80,
+                    "key_events": [{"chapter": 1, "event": "甄士隐梦幻识通灵", "importance": "high"}]
+                },
+                "themes": ["爱情与婚姻", "家族兴衰", "封建礼教"],
+                "text_statistics": {"chapter_count": 80, "character_count": 500000}
+            }
+        elif agent_name == "strategy_planner":
+            # 策略规划的降级数据
+            fallback_data = {
+                "user_ending": "未知结局",
+                "overall_strategy": {
+                    "overall_approach": "渐进式发展",
+                    "key_themes": ["爱情", "家族", "个人"],
+                    "narrative_style": "第三人称全知视角"
+                },
+                "plot_outline": [{
+                    "chapter_num": 81,
+                    "title": "第81回 占旺相四美钓游鱼 奉严词两番入家塾",
+                    "phase": "续写开篇",
+                    "focus": "承接前文，开启新发展"
+                }]
+            }
+        
+        return AgentResult(
+            success=False,
+            data=fallback_data,
+            message=f"[降级方案] {agent_name} 代理出现错误: {str(error) if hasattr(error, '__str__') else 'Unknown error'}"
+        )
 
     async def _plan_chapters(self, context: Dict[str, Any]) -> AgentResult:
         """章节规划（V2新增）"""

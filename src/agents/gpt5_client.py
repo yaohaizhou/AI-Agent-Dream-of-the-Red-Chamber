@@ -13,6 +13,7 @@ import openai
 from openai import AsyncOpenAI
 
 from ..config.settings import Settings
+from ..utils.cache import cached, CacheManager
 
 
 class GPT5Client:
@@ -49,6 +50,19 @@ class GPT5Client:
             # 创建模拟客户端用于测试
             self.client = MockGPT5Client()
 
+    def _generate_cache_key(self, prompt: str, system_message: str = "", temperature: float = 0.8, max_tokens: int = 8000, context: Optional[str] = None) -> str:
+        """生成缓存键"""
+        import hashlib
+        cache_input = {
+            'prompt': prompt,
+            'system_message': system_message,
+            'temperature': temperature,
+            'max_tokens': max_tokens,
+            'context': context
+        }
+        serialized = json.dumps(cache_input, sort_keys=True, default=str)
+        return hashlib.md5(serialized.encode()).hexdigest()
+
     async def generate_content(
         self,
         prompt: str,
@@ -70,6 +84,18 @@ class GPT5Client:
         Returns:
             生成结果字典
         """
+        # 初始化缓存管理器
+        cache_manager = CacheManager(default_ttl=3600)
+        
+        # 生成缓存键
+        cache_key = self._generate_cache_key(prompt, system_message, temperature, max_tokens, context)
+        
+        # 尝试从缓存获取结果
+        cached_result = cache_manager.get(cache_key)
+        if cached_result is not None:
+            print(f"🎯 [CACHE] 命中缓存 - API调用")
+            return cached_result
+
         try:
             print(f"🤖 [DEBUG] 准备API调用 - 模型: {self.settings.model_name}, 温度: {temperature}")
             print(f"🤖 [DEBUG] 最大token数: {max_tokens}")
@@ -113,7 +139,7 @@ class GPT5Client:
 
             print("🤖 [DEBUG] API响应成功")
             print(f"🤖 [DEBUG] 响应模型: {response.model}")
-            print(f"🤖 [DEBUG] 完成原因: {response.choices[0].finish_reason}")
+            print(f"Roboto [DEBUG] 完成原因: {response.choices[0].finish_reason}")
             print(f"🤖 [DEBUG] 生成内容长度: {len(response.choices[0].message.content)}")
 
             # 解析响应
@@ -129,6 +155,10 @@ class GPT5Client:
                 "timestamp": datetime.now().isoformat(),
                 "finish_reason": response.choices[0].finish_reason
             }
+
+            # 缓存结果
+            cache_manager.set(cache_key, result)
+            print(f"💾 [CACHE] 缓存API调用结果")
 
             return result
 
