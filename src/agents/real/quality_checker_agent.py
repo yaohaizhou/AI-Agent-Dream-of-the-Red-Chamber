@@ -11,6 +11,9 @@ from typing import Dict, List, Any, Optional
 from datetime import datetime
 from collections import Counter
 
+import json
+from pathlib import Path
+
 from ..base import BaseAgent, AgentResult
 from ..gpt5_client import get_gpt5_client
 from ...config.settings import Settings
@@ -28,6 +31,20 @@ class QualityCheckerAgent(BaseAgent):
 
         # 质量评估标准
         self.quality_criteria = self._load_quality_criteria()
+        
+        # 加载增强版关键词库
+        self.character_keywords = self._load_character_keywords()
+    
+    def _load_character_keywords(self) -> Dict[str, Any]:
+        """加载人物关键词库"""
+        try:
+            keywords_path = Path(__file__).parent.parent.parent / "utils" / "character_keywords.json"
+            with open(keywords_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                return data.get("characters", {})
+        except Exception as e:
+            print(f"加载关键词库失败: {e}")
+            return {}
 
     def _load_quality_criteria(self) -> Dict[str, Any]:
         """加载质量评估标准"""
