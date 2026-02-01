@@ -538,6 +538,11 @@ class ProgressiveGenerator:
         
         if response["success"]:
             content = response["content"]
+            
+            # 移除<think>标签及其内容
+            content = re.sub(r'<think>.*?</think>', '', content, flags=re.DOTALL)
+            content = content.strip()
+            
             # 确保有结尾标记
             if "且听下回分解" not in content:
                 content += "\n\n毕竟不知后事如何，且听下回分解。"

@@ -395,18 +395,18 @@ class AdvancedQualityChecker:
         # 3. 风格一致性检查
         style_score = await self._check_style_consistency(content, context)
         
-        # 4. 计算综合评分
+        # 4. 计算综合评分（转换为0-10范围）
         overall_score = (
             char_check_result['overall_score'] * 0.4 +
             structure_score * 0.3 +
             style_score * 0.3
-        )
+        ) * 10  # 转换为0-10分制
         
         return {
             "overall_score": overall_score,
             "character_consistency": char_check_result,
-            "structure_score": structure_score,
-            "style_score": style_score,
+            "structure_score": structure_score * 10,  # 转换为0-10分制
+            "style_score": style_score * 10,  # 转换为0-10分制
             "is_acceptable": overall_score >= 8.0,
             "recommendations": self._generate_comprehensive_recommendations(
                 char_check_result, structure_score, style_score
