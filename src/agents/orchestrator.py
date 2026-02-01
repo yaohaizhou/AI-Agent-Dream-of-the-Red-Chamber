@@ -16,6 +16,8 @@ from .real.strategy_planner_agent import StrategyPlannerAgent
 from .real.chapter_planner_agent import ChapterPlannerAgent
 from .real.content_generator_agent import ContentGeneratorAgent
 from .real.quality_checker_agent import QualityCheckerAgent
+from .progressive_generator import ProgressiveGenerator
+from .character_consistency_checker import AdvancedQualityChecker
 from .communication import get_communication_bus, MessageType
 from ..config.settings import Settings
 
@@ -196,41 +198,54 @@ class OrchestratorAgent(BaseAgent):
 
             print("✅ [DEBUG] 章节规划完成")
 
-            # 4. 生成续写内容
-            print("🔍 [DEBUG] 步骤4: 生成续写内容")
-            content_context = {
+            # 4. 使用渐进式生成器生成续写内容
+            print("🔍 [DEBUG] 步骤4: 使用渐进式生成器生成续写内容")
+            generation_context = {
                 "knowledge_base": preprocessing_result.data,
                 "strategy": strategy_result.data,
-                "chapter_plan": chapter_plan_result.data,  # V2新增：传递章节规划
-                "user_ending": input_data.get("ending", "")
+                "chapter_plan": chapter_plan_result.data,
+                "user_ending": input_data.get("ending", ""),
+                "story_context": self._extract_story_context(preprocessing_result.data, strategy_result.data)
             }
-            print(f"🔍 [DEBUG] 内容生成上下文: {content_context}")
+            print(f"🔍 [DEBUG] 生成上下文: {generation_context}")
 
-            content_result = await self._generate_content(content_context)
+            # 初始化渐进式生成器和高级质量检查器
+            content_generator = self.agents['content_generator']
+            progressive_gen = ProgressiveGenerator(content_generator.gpt5_client, content_generator.prompts)
+            advanced_checker = AdvancedQualityChecker(content_generator.gpt5_client, content_generator.prompts)
 
-            print(f"🔍 [DEBUG] 内容生成结果: success={content_result.success}, message={content_result.message}")
+            # 生成章节
+            chapter_number = 81  # 从第81回开始
+            generation_result = await progressive_gen.generate_chapter(
+                chapter_number=chapter_number,
+                context=generation_context,
+                quality_threshold=8.0
+            )
 
-            if not content_result.success:
-                print("❌ [DEBUG] 内容生成失败")
-                return AgentResult(
-                    success=False,
-                    data=content_result.data,
-                    message="内容生成失败"
-                )
+            print(f"🔍 [DEBUG] 渐进式生成完成，章节: {chapter_number}")
 
-            print("✅ [DEBUG] 内容生成完成")
+            # 5. 使用高级质量检查器进行评估
+            print("🔍 [DEBUG] 步骤5: 使用高级质量检查器进行评估")
+            content_to_check = generation_result.get("final_content", "")
+            chapter_info = {
+                "chapter_number": chapter_number,
+                "title": generation_result.get("title", f"第{chapter_number}回"),
+                "scenes": generation_result.get("scenes_content", [])
+            }
 
-            # 5. 质量评估和迭代优化
-            print("🔍 [DEBUG] 步骤5: 质量评估和迭代优化")
-            content_result, quality_result = await self._iterative_improvement(content_result, input_data)
+            quality_result = await advanced_checker.comprehensive_check(
+                content=content_to_check,
+                chapter_info=chapter_info,
+                context=generation_context
+            )
 
-            print(f"🔍 [DEBUG] 最终质量评估结果: success={quality_result.success}, message={quality_result.message}")
+            print(f"🔍 [DEBUG] 高级质量检查完成，总体评分: {quality_result['overall_score']}")
 
             # 6. 格式化输出
             print("🔍 [DEBUG] 步骤6: 格式化输出")
             final_result = await self._format_output({
-                "content": content_result.data,
-                "quality": quality_result.data,
+                "content": generation_result,
+                "quality": quality_result,
                 "metadata": input_data
             })
 
@@ -242,9 +257,9 @@ class OrchestratorAgent(BaseAgent):
             integrated_data = {
                 "knowledge_base": preprocessing_result.data if preprocessing_result.success else {},
                 "strategy": strategy_result.data if strategy_result.success else {},
-                "chapter_plan": chapter_plan_result.data if chapter_plan_result.success else {},  # V2新增
-                "content": content_result.data if content_result.success else {},
-                "quality": quality_result.data if quality_result.success else {},
+                "chapter_plan": chapter_plan_result.data if chapter_plan_result.success else {},
+                "content": generation_result,
+                "quality": quality_result,
                 "user_interface": final_result.data if final_result.success else {}
             }
 
@@ -354,6 +369,31 @@ class OrchestratorAgent(BaseAgent):
             message=f"[降级方案] {agent_name} 代理出现错误: {str(error) if hasattr(error, '__str__') else 'Unknown error'}"
         )
 
+    def _extract_story_context(self, knowledge_base: Dict[str, Any], strategy: Dict[str, Any]) -> str:
+        """从知识库和策略中提取故事上下文"""
+        context_parts = []
+        
+        # 从知识库中提取人物信息
+        characters = knowledge_base.get("characters", {})
+        if characters:
+            context_parts.append("人物状态：")
+            for name, info in characters.items():
+                personality = info.get("性格", "未知")
+                current_state = info.get("现状", "未知")
+                context_parts.append(f"- {name}：{personality}，{current_state}")
+        
+        # 从策略中提取用户期望
+        user_ending = strategy.get("user_ending", "未知结局")
+        context_parts.append(f"理想结局方向：{user_ending}")
+        
+        # 从策略中提取主题
+        overall_strategy = strategy.get("overall_strategy", {})
+        themes = overall_strategy.get("key_themes", [])
+        if themes:
+            context_parts.append(f"核心主题：{', '.join(themes)}")
+        
+        return "\n".join(context_parts)
+
     async def _plan_chapters(self, context: Dict[str, Any]) -> AgentResult:
         """章节规划（V2新增）"""
         print("📋 [DEBUG] 调用ChapterPlannerAgent进行章节规划")
@@ -446,30 +486,29 @@ class OrchestratorAgent(BaseAgent):
         chapters_dir = output_path / "chapters"
         chapters_dir.mkdir(exist_ok=True)
 
-        # 获取实际生成的章节内容和策略信息
+        # 获取实际生成的章节内容（现在使用新的渐进式生成器数据结构）
         content_data = results.data.get("content", {})
-        chapters = content_data.get("chapters", [])
+        final_content = content_data.get("final_content", "")
+        title = content_data.get("title", f"第81回")
         
-        # 从策略信息中获取起始章节号
-        strategy_data = results.data.get("strategy", {})
-        plot_outline = strategy_data.get("plot_outline", [])
+        # 提取章节号
+        import re
+        chapter_num_match = re.search(r'第(\d+)回', title)
+        if chapter_num_match:
+            chapter_num = int(chapter_num_match.group(1))
+        else:
+            chapter_num = 81  # 默认从第81回开始
         
-        print(f"💾 [DEBUG] 保存 {len(chapters)} 个章节到文件")
+        print(f"💾 [DEBUG] 保存第{chapter_num}回续写内容")
         
-        # 保存实际生成的章节内容
-        for i, chapter_content in enumerate(chapters):
-            # 从策略大纲中获取实际的章节号
-            if i < len(plot_outline):
-                chapter_num = plot_outline[i].get("chapter_num", 81 + i)
-            else:
-                chapter_num = 81 + i  # 默认从第81回开始
-            
+        # 保存生成的章节内容
+        if final_content:
             chapter_file = chapters_dir / f"chapter_{chapter_num:03d}.md"
             
             # 格式化章节内容
-            formatted_content = f"""# 第{chapter_num}回
+            formatted_content = f"""# {title}
 
-{chapter_content}
+{final_content}
 
 ---
 
@@ -480,12 +519,11 @@ class OrchestratorAgent(BaseAgent):
             with open(chapter_file, 'w', encoding='utf-8') as f:
                 f.write(formatted_content)
             
-            print(f"💾 [DEBUG] 已保存第{chapter_num}回，长度: {len(chapter_content)}")
-        
-        if not chapters:
+            print(f"💾 [DEBUG] 已保存第{chapter_num}回，长度: {len(final_content)}")
+        else:
             print("⚠️ [DEBUG] 没有找到生成的章节内容，创建占位符文件")
             # 如果没有实际内容，创建一个占位符
-            placeholder_content = """# 第81回 续写内容
+            placeholder_content = f"""# {title}
 
 *续写内容生成中...*
 
@@ -493,7 +531,7 @@ class OrchestratorAgent(BaseAgent):
 
 *本回由AI续写系统生成*
 """
-            chapter_file = chapters_dir / "chapter_081.md"
+            chapter_file = chapters_dir / f"chapter_{chapter_num:03d}.md"
             with open(chapter_file, 'w', encoding='utf-8') as f:
                 f.write(placeholder_content)
 
@@ -503,9 +541,10 @@ class OrchestratorAgent(BaseAgent):
         with open(strategy_file, 'w', encoding='utf-8') as f:
             f.write(strategy_content)
 
-        # 生成质量报告（使用实际的质量评估数据）
+        # 生成质量报告（使用新的高级质量检查器数据）
         quality_file = output_path / "quality_report.md"
-        quality_content = self._generate_quality_markdown(results.data.get("quality", {}))
+        quality_data = results.data.get("quality", {})
+        quality_content = self._generate_advanced_quality_markdown(quality_data)
         with open(quality_file, 'w', encoding='utf-8') as f:
             f.write(quality_content)
 
@@ -583,7 +622,7 @@ class OrchestratorAgent(BaseAgent):
         return content
 
     def _generate_quality_markdown(self, quality_data: Dict[str, Any]) -> str:
-        """生成质量报告的markdown内容"""
+        """生成质量报告的markdown内容（旧版，保持向后兼容）"""
         if not quality_data:
             return "# 质量评估报告\n\n*质量评估数据生成中...*\n"
         
@@ -622,6 +661,55 @@ class OrchestratorAgent(BaseAgent):
                 content += f"{i}. {suggestion}\n"
         else:
             content += "\n### 改进建议\n*暂无具体建议*\n"
+        
+        content += f"\n### 评估时间\n{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
+        
+        return content
+
+    def _generate_advanced_quality_markdown(self, quality_data: Dict[str, Any]) -> str:
+        """生成高级质量报告的markdown内容"""
+        if not quality_data:
+            return "# 高级质量评估报告\n\n*质量评估数据生成中...*\n"
+        
+        overall_score = quality_data.get("overall_score", 0)
+        char_consistency = quality_data.get("character_consistency", {})
+        structure_score = quality_data.get("structure_score", 0)
+        style_score = quality_data.get("style_score", 0)
+        recommendations = quality_data.get("recommendations", [])
+        
+        # 生成星级评分
+        stars = "⭐" * min(5, int(overall_score / 2))
+        
+        content = f"""# 高级质量评估报告
+
+## 综合评分: {overall_score:.1f}/10 {stars}
+
+### 评估维度
+- **人物一致性**: {char_consistency.get('overall_score', 0):.1f}/10
+- **结构完整性**: {structure_score:.1f}/10
+- **风格一致性**: {style_score:.1f}/10
+
+"""
+        
+        # 添加人物一致性详情
+        individual_results = char_consistency.get("individual_results", {})
+        if individual_results:
+            content += "### 人物一致性详情\n"
+            for char_name, result in individual_results.items():
+                score = result.get("score", 0)
+                consistent = result.get("consistent", False)
+                status = "✅" if consistent else "❌"
+                content += f"- **{char_name}**: {score:.1f}/10 {status}\n"
+            
+            content += "\n"
+        
+        # 添加改进建议
+        if recommendations:
+            content += "### 改进建议\n"
+            for i, recommendation in enumerate(recommendations, 1):
+                content += f"{i}. {recommendation}\n"
+        else:
+            content += "### 改进建议\n*未发现问题*\n"
         
         content += f"\n### 评估时间\n{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
         
