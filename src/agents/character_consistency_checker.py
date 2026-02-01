@@ -372,7 +372,8 @@ class AdvancedQualityChecker:
     """高级质量检查器（整合渐进式生成和人物一致性）"""
     
     def __init__(self, gpt5_client, prompts):
-        self.progressive_gen = ProgressiveGenerator(gpt5_client, prompts)
+        self.gpt5_client = gpt5_client
+        self.prompts = prompts
         self.char_checker = CharacterConsistencyChecker(gpt5_client, prompts)
     
     async def comprehensive_check(
@@ -451,7 +452,7 @@ class AdvancedQualityChecker:
 请给出1-10分的评分，并简要说明理由。
 """
         
-        response = await self.progressive_gen.gpt5_client.generate_with_retry(
+        response = await self.gpt5_client.generate_with_retry(
             prompt=prompt,
             system_message="你是《红楼梦》文学风格评估专家。",
             temperature=0.3,
