@@ -288,60 +288,171 @@ class QualityCheckerAgent(BaseAgent):
 
     def _check_personality_match(self, content: str, char_name: str, personality_traits: str) -> float:
         """
-        检查人物性格是否与设定匹配
+        检查人物性格是否与设定匹配 - V2修复版
         返回0-1之间的匹配度
         """
-        traits = personality_traits.lower().split()
+        # 定义核心关键词映射 (从长描述提取关键词)
+        keyword_mapping = {
+            # 宝玉
+            "纯真": ["真", "纯", "痴"],
+            "善良": ["善", "怜", "疼", "爱"],
+            "叛逆": ["叛逆", "不听", "不愿", "不想"],
+            "封建": ["礼教", "规矩", "功名", "仕途"],
+            "细腻": ["细", "心", "想", "思"],
+            "尊重": ["尊重", "疼", "爱", "怜"],
+            # 黛玉
+            "聪慧": ["诗", "词", "才"],
+            "敏感": ["敏感", "多心", "疑"],
+            "多愁": ["愁", "悲", "泪", "叹"],
+            "率真": ["真", "直", "说"],
+            # 宝钗
+            "端庄": ["端庄", "得体", "礼"],
+            "贤惠": ["贤", "惠", "劝"],
+            "圆通": ["圆", "通", "妥"],
+            "大体": ["大体", "全", "周"],
+            # 王熙凤
+            "精明": ["精", "明", "算"],
+            "能干": ["能干", "管", "办"],
+            "权术": ["权", "术", "计"],
+            # 贾母
+            "慈祥": ["慈", "祥", "疼", "爱"],
+            "威严": ["威", "严", "命", "令"],
+        }
+        
+        content_lower = content.lower()
         matches = 0
-        total_traits = len(traits)
-
-        for trait in traits:
-            # 检查内容中是否体现了该特质
-            if trait in content.lower():
-                matches += 1
-            # 也可以使用更复杂的匹配逻辑，比如检查相关行为描述
-
-        return matches / total_traits if total_traits > 0 else 0.0
+        total_checks = 0
+        
+        # 检查每个性格词的关键词
+        for trait in personality_traits.split():
+            keywords = keyword_mapping.get(trait, [trait])
+            total_checks += 1
+            
+            for kw in keywords:
+                if kw in content_lower:
+                    matches += 1
+                    break
+        
+        return matches / total_checks if total_checks > 0 else 0.5
 
     def _check_behavior_consistency(self, content: str, char_name: str, char_info: Dict[str, str]) -> float:
         """
-        检查人物行为是否与设定一致
+        检查人物行为是否与设定一致 - V2修复版
         返回0-1之间的匹配度
         """
+        # 定义核心行为关键词映射
+        behavior_keywords = {
+            # 宝玉
+            "关心": ["关心", "疼", "爱", "问", "瞧"],
+            "女性": ["妹妹", "姐姐", "女儿", "丫鬟"],
+            "逃避": ["逃", "躲", "避", "怕", "烦"],
+            "仕途": ["仕途", "功名", "读书", "做官", "老爷"],
+            "诗词": ["诗", "词", "曲", "赋", "联"],
+            # 黛玉
+            "写诗": ["诗", "词", "写", "作", "吟"],
+            "体弱": ["病", "弱", "咳", "喘", "药"],
+            "多疑": ["疑", "猜", "想", "心"],
+            # 宝钗
+            "劝导": ["劝", "说", "教", "导"],
+            "礼仪": ["礼", "仪", "规", "矩"],
+            "稳重": ["稳", "重", "妥", "当"],
+            # 王熙凤
+            "管理": ["管", "理", "办", "查"],
+            "权术": ["权", "术", "计", "谋"],
+            "言语": ["说", "话", "言", "语"],
+            # 贾母
+            "疼爱": ["疼", "爱", "宠", "护", "心肝"],
+            "决定": ["定", "决", "命", "令"],
+        }
+        
         typical_behaviors = char_info.get("典型行为", "")
         if not typical_behaviors:
-            return 0.0
-
-        behaviors = typical_behaviors.split()
-        matches = 0
-        total_behaviors = len(behaviors)
-
+            return 0.5
+        
         content_lower = content.lower()
-        for behavior in behaviors:
-            if behavior in content_lower:
+        matches = 0
+        total_checks = 0
+        
+        # 对每个行为描述提取核心词
+        for behavior_desc in typical_behaviors.split():
+            total_checks += 1
+            found = False
+            
+            # 查找匹配的关键词
+            for key, keywords in behavior_keywords.items():
+                if key in behavior_desc:
+                    for kw in keywords:
+                        if kw in content_lower:
+                            matches += 1
+                            found = True
+                            break
+                if found:
+                    break
+            
+            # 如果没找到映射，直接用描述词匹配
+            if not found and behavior_desc in content_lower:
                 matches += 1
-
-        return matches / total_behaviors if total_behaviors > 0 else 0.0
+        
+        return matches / total_checks if total_checks > 0 else 0.5
 
     def _check_dialogue_consistency(self, content: str, char_name: str, char_info: Dict[str, str]) -> float:
         """
-        检查对话是否符合人物身份
+        检查对话是否符合人物身份 - V2修复版
         返回0-1之间的匹配度
         """
-        # 查找该人物的对话
+        # 定义语言特点关键词映射
+        dialogue_keywords = {
+            # 宝玉
+            "温和": ["温", "柔", "轻", "慢"],
+            "体贴": ["体贴", "心疼", "问", "瞧"],
+            "尊重": ["尊重", "不敢", "请"],
+            "叛逆": ["叛逆", "不愿", "不想", "偏"],
+            # 黛玉
+            "机智": ["机智", "尖", "刻", "讽"],
+            "诗意": ["诗", "词", "花", "月"],
+            "尖刻": ["尖", "刻", "讽", "刺"],
+            # 宝钗
+            "温和": ["温", "柔", "和"],
+            "理性": ["理", "智", "思", "想"],
+            "劝导": ["劝", "说", "教"],
+            "礼教": ["礼", "教", "规", "矩"],
+            # 王熙凤
+            "爽朗": ["爽", "快", "直"],
+            "权威": ["权", "威", "命", "令"],
+            "机智": ["机智", "巧", "妙"],
+            # 贾母
+            "慈祥": ["慈", "祥", "爱", "疼"],
+            "关爱": ["关", "爱", "护", "宠"],
+            "温情": ["温", "情", "柔", "暖"],
+        }
+        
+        content_lower = content.lower()
         dialogue_matches = 0
         total_checks = 0
 
         # 检查语言特点
         language_traits = char_info.get("语言特点", "")
         if language_traits:
-            traits = language_traits.split()
-            for trait in traits:
-                if trait in content:
-                    dialogue_matches += 1
+            for trait_desc in language_traits.split():
                 total_checks += 1
+                found = False
+                
+                # 查找关键词映射
+                for key, keywords in dialogue_keywords.items():
+                    if key in trait_desc:
+                        for kw in keywords:
+                            if kw in content_lower:
+                                dialogue_matches += 1
+                                found = True
+                                break
+                    if found:
+                        break
+                
+                # 如果没找到映射，直接用描述词
+                if not found and trait_desc in content_lower:
+                    dialogue_matches += 1
 
-        return dialogue_matches / total_checks if total_checks > 0 else 0.0
+        return dialogue_matches / total_checks if total_checks > 0 else 0.5
 
     def _check_relationship_consistency(self, content: str, char_name: str, all_characters: Dict[str, Dict[str, str]]) -> float:
         """
