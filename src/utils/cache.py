@@ -5,6 +5,7 @@
 用于缓存API调用结果和其他昂贵的计算操作
 """
 
+import asyncio
 import json
 import hashlib
 import pickle
@@ -221,7 +222,3 @@ def cached(ttl: Optional[int] = None, cache_params: bool = True):
             return sync_wrapper
     
     return decorator
-
-
-# 为了使用asyncio.iscoroutinefunction，我们需要导入它
-import asyncio

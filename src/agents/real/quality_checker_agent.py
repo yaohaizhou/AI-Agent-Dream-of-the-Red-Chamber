@@ -365,12 +365,6 @@ class QualityCheckerAgent(BaseAgent):
 
         return relationship_matches / total_checks if total_checks > 0 else 0.0
 
-    def _check_dialogue_consistency(self, content: str, char_name: str, char_info: Dict) -> bool:
-        """检查对话一致性"""
-        # 这里可以实现更复杂的对话分析逻辑
-        # 暂时返回True
-        return True
-
     async def _evaluate_plot_reasonability(self, content: str, chapter_info: Dict[str, Any], context: Dict[str, Any]) -> float:
         """评估情节合理性"""
         try:
