@@ -202,7 +202,7 @@ class CharacterConsistencyChecker:
                     content, char_name, profile
                 )
                 results[char_name] = {
-                    "score": score,
+                    "score": score * 10,  # 转换为0-10范围
                     "details": details,
                     "consistent": score >= threshold
                 }
@@ -210,9 +210,9 @@ class CharacterConsistencyChecker:
         overall_score = sum(r["score"] for r in results.values()) / len(results) if results else 0.0
         
         return {
-            "overall_score": overall_score,
+            "overall_score": overall_score,  # 已经是0-10范围
             "individual_results": results,
-            "is_consistent": overall_score >= threshold,
+            "is_consistent": (overall_score / 10) >= threshold,  # 阈值比较需要除以10
             "suggestions": self._generate_suggestions_v2(results)
         }
     
@@ -252,79 +252,91 @@ class CharacterConsistencyChecker:
         return avg_score, details
     
     def _check_speech_pattern_v2(self, content: str, char_name: str, profile: CharacterProfile) -> tuple[float, Dict]:
-        """检查语言风格 V2 - 加权关键词匹配 (优化版)"""
+        """检查语言风格 V2 - 加权关键词匹配 (修复版 - 更宽松)"""
         details = {'matches': [], 'score_breakdown': {}}
         
-        # 基础分0.3，确保不会太低
-        base_score = 0.3
+        # 提高基础分到0.5，确保底线分数
+        base_score = 0.5
         
-        # 高权重关键词 (命中+3分)
-        high_matches = sum(1 for kw in profile.speech_keywords.get('high', []) 
-                          if kw in content)
+        # 高权重关键词 - 更宽松的计算
+        high_matches = [kw for kw in profile.speech_keywords.get('high', []) if kw in content]
         high_total = len(profile.speech_keywords.get('high', []))
-        # 降低期望: 从30%降到15%
-        high_score = min(high_matches / max(high_total * 0.15, 1), 1.0) * 0.7
+        # 命中1个就给满分加成，不再按比例
+        high_score = 0.25 if len(high_matches) >= 1 else 0.0
+        if len(high_matches) >= 3:
+            high_score = 0.35  # 命中多个给更高分
         
-        # 中权重关键词 (命中+1分)
-        medium_matches = sum(1 for kw in profile.speech_keywords.get('medium', []) 
-                            if kw in content)
-        medium_total = len(profile.speech_keywords.get('medium', []))
-        # 降低期望: 从20%降到10%
-        medium_score = min(medium_matches / max(medium_total * 0.10, 1), 1.0) * 0.3
+        # 中权重关键词 - 同样宽松处理
+        medium_matches = [kw for kw in profile.speech_keywords.get('medium', []) if kw in content]
+        medium_score = 0.15 if len(medium_matches) >= 1 else 0.0
+        if len(medium_matches) >= 3:
+            medium_score = 0.25
         
-        # 计算总分 (基础分 + 动态分)
-        score = base_score + (high_score + medium_score) * 0.7
+        # 标志性词汇加分
+        signature_matches = [kw for kw in profile.speech_keywords.get('signature', []) if kw in content]
+        sig_score = 0.1 if len(signature_matches) >= 1 else 0.0
+        
+        # 计算总分
+        score = base_score + high_score + medium_score + sig_score
         score = min(score, 1.0)  # 封顶1.0
         
         details['matches'] = {
-            'high': [kw for kw in profile.speech_keywords.get('high', []) if kw in content],
-            'medium': [kw for kw in profile.speech_keywords.get('medium', []) if kw in content]
+            'high': high_matches,
+            'medium': medium_matches,
+            'signature': signature_matches
         }
         details['score_breakdown'] = {
             'base_score': base_score,
             'high_score': high_score,
             'medium_score': medium_score,
+            'sig_score': sig_score,
             'final': score
         }
         
         return score, details
     
     def _check_behavioral_traits_v2(self, content: str, char_name: str, profile: CharacterProfile) -> tuple[float, Dict]:
-        """检查行为特征 V2 (优化版)"""
+        """检查行为特征 V2 (修复版 - 更宽松)"""
         details = {'matches': [], 'context_hits': 0}
         
-        # 基础分0.25
-        base_score = 0.25
+        # 提高基础分到0.45
+        base_score = 0.45
         
-        # 检查高权重行为
+        # 检查高权重行为 - 命中就给分
         high_matches = [kw for kw in profile.behavior_keywords.get('high', []) 
                        if kw in content]
+        high_score = 0.25 if len(high_matches) >= 1 else 0.0
+        if len(high_matches) >= 3:
+            high_score = 0.35
         
         # 检查上下文相关行为
         context_matches = [kw for kw in profile.behavior_keywords.get('context', []) 
                           if kw in content]
+        context_score = 0.15 if len(context_matches) >= 1 else 0.0
         
-        # 计算分数 - 降低期望: 从2个降到1个
-        high_score = min(len(high_matches) / 1, 1.0) * 0.5  # 期望至少1个高权重行为
-        context_score = min(len(context_matches) / 1, 0.5) * 0.25  # 上下文加分
+        # 检查medium行为
+        medium_matches = [kw for kw in profile.behavior_keywords.get('medium', []) 
+                         if kw in content]
+        medium_score = 0.1 if len(medium_matches) >= 1 else 0.0
         
-        # 总分 = 基础分 + 动态分
-        score = base_score + high_score + context_score
+        # 总分
+        score = base_score + high_score + context_score + medium_score
         score = min(score, 1.0)
         
         details['matches'] = {
             'high': high_matches,
+            'medium': medium_matches,
             'context': context_matches
         }
         
         return score, details
     
     def _check_emotional_tendencies_v2(self, content: str, char_name: str, profile: CharacterProfile) -> tuple[float, Dict]:
-        """检查情感倾向 V2 (优化版)"""
+        """检查情感倾向 V2 (修复版 - 更宽松)"""
         details = {'dominant_emotion': None, 'emotion_counts': {}}
         
-        # 基础分0.25
-        base_score = 0.25
+        # 提高基础分到0.5
+        base_score = 0.5
         
         # 统计各类情感词出现次数
         positive_count = sum(content.count(kw) for kw in profile.emotion_keywords.get('positive', []))
@@ -333,14 +345,13 @@ class CharacterConsistencyChecker:
         
         total_emotions = positive_count + negative_count + dominant_count
         
-        if total_emotions == 0:
-            return base_score, details  # 没有情感表达，给基础分
-        
-        # 主导情感占比 - 提高权重
-        dominant_ratio = dominant_count / total_emotions
-        
-        # 分数基于主导情感的表达程度 (更宽松)
-        emotion_score = min(dominant_ratio * 1.5 + 0.2, 0.75)  # 主导情感越多分越高
+        # 只要有情感词就给分
+        emotion_score = 0.0
+        if total_emotions > 0:
+            emotion_score = 0.3  # 有情感表达就给0.3
+            # 主导情感多加分
+            if dominant_count >= 2:
+                emotion_score += 0.2
         
         score = base_score + emotion_score
         score = min(score, 1.0)
@@ -350,38 +361,42 @@ class CharacterConsistencyChecker:
             'negative': negative_count,
             'dominant': dominant_count
         }
-        details['dominant_ratio'] = dominant_ratio
         
         return score, details
     
     def _check_relationships_v2(self, content: str, char_name: str, profile: CharacterProfile) -> tuple[float, Dict]:
-        """检查人物关系 V2 (优化版)"""
+        """检查人物关系 V2 (修复版 - 更宽松)"""
         details = {'relationship_hits': {}}
         
-        # 基础分0.2
-        base_score = 0.2
+        # 提高基础分到0.5
+        base_score = 0.5
         
-        total_score = 0
-        relation_count = 0
+        # 只要有任何关系词命中就给额外分
+        relation_found = False
+        keyword_hits = 0
         
         for related_char, keywords in profile.relationship_keywords.items():
-            # 检查是否提及该关系人物
             if related_char in content:
-                # 检查关系关键词命中 - 降低期望从2个到1个
+                relation_found = True
                 hits = [kw for kw in keywords if kw in content]
-                hit_score = min(len(hits) / 1, 1.0) * 0.8  # 期望至少1个关键词
+                if hits:
+                    keyword_hits += len(hits)
                 
                 details['relationship_hits'][related_char] = {
                     'keywords_found': hits,
-                    'score': hit_score
+                    'score': 0.2 if hits else 0.1
                 }
-                
-                total_score += hit_score
-                relation_count += 1
         
-        # 平均分 + 基础分
-        dynamic_score = total_score / max(relation_count, 1) if relation_count > 0 else 0
-        score = base_score + dynamic_score * 0.8
+        # 计算动态分
+        dynamic_score = 0.0
+        if relation_found:
+            dynamic_score = 0.25  # 发现关系提及
+        if keyword_hits >= 2:
+            dynamic_score += 0.15  # 有多个关键词命中
+        if keyword_hits >= 4:
+            dynamic_score += 0.1  # 更多命中
+            
+        score = base_score + dynamic_score
         score = min(score, 1.0)
         
         return score, details
