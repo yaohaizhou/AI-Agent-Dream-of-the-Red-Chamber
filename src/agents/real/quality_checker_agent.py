@@ -789,27 +789,42 @@ class QualityCheckerAgent(BaseAgent):
         return wenyan_ratio >= 0.001 or idiom_count >= 1  # 降低阈值
 
     def _parse_evaluation_score(self, evaluation_text: str, dimension: str) -> float:
-        """解析评估分数"""
+        """解析评估分数 - V2改进版"""
         try:
             # 从评估文本中提取分数
-            # 这里应该解析GPT-5返回的评分
-            # 暂时返回模拟分数
-            base_score = 7.0
+            # 尝试从文本中找到具体的分数
+            import re
+            
+            # 寻找分数模式，如 "8.5/10" 或 "8.5分" 或 "评分：8.5"
+            score_patterns = [
+                r'(\d+(?:\.\d+)?)\s*/\s*10',
+                r'评分[：:]\s*(\d+(?:\.\d+)?)',
+                r'(\d+(?:\.\d+)?)\s*分',
+            ]
+            
+            for pattern in score_patterns:
+                match = re.search(pattern, evaluation_text)
+                if match:
+                    score = float(match.group(1))
+                    return max(0.0, min(10.0, score))
+            
+            # 如果没有找到具体分数，根据关键词判断
+            base_score = 6.5  # 提高基础分数
 
             # 根据文本内容调整分数
-            if "优秀" in evaluation_text or "很好" in evaluation_text:
-                base_score += 1.5
-            elif "良好" in evaluation_text or "不错" in evaluation_text:
-                base_score += 0.5
-            elif "一般" in evaluation_text:
+            if "优秀" in evaluation_text or "很好" in evaluation_text or "出色" in evaluation_text:
+                base_score += 2.0
+            elif "良好" in evaluation_text or "不错" in evaluation_text or "较好" in evaluation_text:
+                base_score += 1.0
+            elif "一般" in evaluation_text or "普通" in evaluation_text:
                 base_score -= 0.5
-            elif "不足" in evaluation_text or "需要改进" in evaluation_text:
+            elif "不足" in evaluation_text or "需要改进" in evaluation_text or "较差" in evaluation_text:
                 base_score -= 1.5
 
             return max(0.0, min(10.0, base_score))
 
         except Exception:
-            return 6.0  # 默认中等分数
+            return 6.5  # 默认中等分数
 
     def _calculate_overall_score(self, dimension_scores: Dict[str, float]) -> float:
         """计算综合评分"""
