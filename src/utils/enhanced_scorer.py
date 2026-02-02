@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-增强版人物一致性评分器 V2
-使用结构化关键词库，提升评分精度
+增强版人物一致性评分器 V3
+与 character_consistency_checker.py 使用相同的评分逻辑
 """
 
 import json
@@ -11,7 +11,7 @@ from pathlib import Path
 
 
 class EnhancedCharacterScorer:
-    """增强版人物评分器"""
+    """增强版人物评分器 V3"""
     
     def __init__(self):
         self.keywords_db = self._load_keywords_db()
@@ -40,130 +40,150 @@ class EnhancedCharacterScorer:
             return {"total_score": 5.0, "error": f"未找到人物: {character_name}"}
         
         content_lower = content.lower()
-        details = {}
         
-        # 1. 语言风格评分 (40%)
-        speech_score = self._score_speech(content_lower, char_data)
-        details["speech"] = speech_score
+        # 使用与 character_consistency_checker 相同的评分逻辑
+        speech_score, speech_details = self._check_speech(content_lower, char_data)
+        behavior_score, behavior_details = self._check_behavior(content_lower, char_data)
+        emotion_score, emotion_details = self._check_emotion(content_lower, char_data)
+        relation_score, relation_details = self._check_relationships(content_lower, char_data)
         
-        # 2. 行为特征评分 (40%)
-        behavior_score = self._score_behavior(content_lower, char_data)
-        details["behavior"] = behavior_score
-        
-        # 3. 人物关系评分 (20%)
-        relationship_score = self._score_relationships(content_lower, char_data)
-        details["relationships"] = relationship_score
-        
-        # 计算总分 (0-10)
-        total = (
-            speech_score["score"] * 0.4 +
-            behavior_score["score"] * 0.4 +
-            relationship_score["score"] * 0.2
-        ) * 10
+        # 计算加权分数 (与 character_consistency_checker 相同权重)
+        total_normalized = (
+            speech_score * 0.30 +
+            behavior_score * 0.25 +
+            emotion_score * 0.25 +
+            relation_score * 0.20
+        )
         
         return {
-            "total_score": total,
-            "speech_score": speech_score["score"] * 10,
-            "behavior_score": behavior_score["score"] * 10,
-            "relationship_score": relationship_score["score"] * 10,
-            "details": details
+            "total_score": total_normalized * 10,  # 转换为0-10范围
+            "speech_score": speech_score * 10,
+            "behavior_score": behavior_score * 10,
+            "emotion_score": emotion_score * 10,
+            "relationship_score": relation_score * 10,
+            "details": {
+                "speech": speech_details,
+                "behavior": behavior_details,
+                "emotion": emotion_details,
+                "relationships": relation_details
+            }
         }
     
-    def _score_speech(self, content: str, char_data: Dict) -> Dict:
-        """评分语言风格"""
+    def _check_speech(self, content: str, char_data: Dict) -> tuple[float, Dict]:
+        """检查语言风格 - 与 character_consistency_checker 相同逻辑"""
         speech = char_data.get("speech", {})
-        weights = self.keywords_db.get("scoring_weights", {})
+        
+        base_score = 0.5
         
         # 高权重关键词
         high_keywords = speech.get("high_weight", [])
-        high_matches = sum(1 for kw in high_keywords if kw in content)
-        high_score = min(high_matches / max(len(high_keywords) * 0.3, 1), 1.0)
+        high_matches = [kw for kw in high_keywords if kw in content]
+        high_score = 0.25 if len(high_matches) >= 1 else 0.0
+        if len(high_matches) >= 3:
+            high_score = 0.35
         
         # 中权重关键词
         medium_keywords = speech.get("medium_weight", [])
-        medium_matches = sum(1 for kw in medium_keywords if kw in content)
-        medium_score = min(medium_matches / max(len(medium_keywords) * 0.2, 1), 1.0)
+        medium_matches = [kw for kw in medium_keywords if kw in content]
+        medium_score = 0.15 if len(medium_matches) >= 1 else 0.0
+        if len(medium_matches) >= 3:
+            medium_score = 0.25
         
         # 标志性词汇
         signature_keywords = speech.get("signature", [])
-        sig_matches = sum(1 for kw in signature_keywords if kw in content)
-        sig_score = min(sig_matches / max(len(signature_keywords) * 0.2, 1), 0.5)
+        sig_matches = [kw for kw in signature_keywords if kw in content]
+        sig_score = 0.1 if len(sig_matches) >= 1 else 0.0
         
-        # 加权总分
-        total = (
-            high_score * weights.get("speech_high", 0.3) +
-            medium_score * weights.get("speech_medium", 0.15) +
-            sig_score
-        )
+        score = base_score + high_score + medium_score + sig_score
+        score = min(score, 1.0)
         
-        return {
-            "score": min(total, 1.0),
+        return score, {
             "high_matches": high_matches,
             "medium_matches": medium_matches,
-            "signature_matches": sig_matches
+            "signature_matches": sig_matches,
+            "score_breakdown": {"base": base_score, "high": high_score, "medium": medium_score, "sig": sig_score}
         }
     
-    def _score_behavior(self, content: str, char_data: Dict) -> Dict:
-        """评分行为特征"""
+    def _check_behavior(self, content: str, char_data: Dict) -> tuple[float, Dict]:
+        """检查行为特征"""
         behavior = char_data.get("behavior", {})
-        weights = self.keywords_db.get("scoring_weights", {})
         
-        # 行为动作
+        base_score = 0.45
+        
+        # 高权重行为
         actions = behavior.get("actions", [])
-        action_matches = sum(1 for kw in actions if kw in content)
-        action_score = min(action_matches / max(len(actions) * 0.3, 1), 1.0)
+        action_matches = [kw for kw in actions if kw in content]
+        action_score = 0.25 if len(action_matches) >= 1 else 0.0
+        if len(action_matches) >= 3:
+            action_score = 0.35
         
-        # 情感表达
-        emotions = behavior.get("emotions", [])
-        emotion_matches = sum(1 for kw in emotions if kw in content)
-        emotion_score = min(emotion_matches / max(len(emotions) * 0.3, 1), 1.0)
-        
-        # 语境词
+        # 上下文行为
         context = behavior.get("context", [])
-        context_matches = sum(1 for kw in context if kw in content)
-        context_score = min(context_matches / max(len(context) * 0.2, 1), 0.5)
+        context_matches = [kw for kw in context if kw in content]
+        context_score = 0.15 if len(context_matches) >= 1 else 0.0
         
-        # 加权总分
-        total = (
-            action_score * weights.get("behavior_actions", 0.25) +
-            emotion_score * weights.get("behavior_emotions", 0.15) +
-            context_score
-        )
+        # medium行为
+        medium_actions = behavior.get("medium", [])
+        medium_matches = [kw for kw in medium_actions if kw in content]
+        medium_score = 0.1 if len(medium_matches) >= 1 else 0.0
         
-        return {
-            "score": min(total, 1.0),
+        score = base_score + action_score + context_score + medium_score
+        score = min(score, 1.0)
+        
+        return score, {
             "action_matches": action_matches,
-            "emotion_matches": emotion_matches,
-            "context_matches": context_matches
+            "context_matches": context_matches,
+            "medium_matches": medium_matches
         }
     
-    def _score_relationships(self, content: str, char_data: Dict) -> Dict:
-        """评分人物关系"""
+    def _check_emotion(self, content: str, char_data: Dict) -> tuple[float, Dict]:
+        """检查情感倾向"""
+        emotions = char_data.get("behavior", {}).get("emotions", [])
+        
+        base_score = 0.5
+        
+        emotion_count = sum(content.count(kw) for kw in emotions)
+        
+        emotion_score = 0.0
+        if emotion_count > 0:
+            emotion_score = 0.3
+            if emotion_count >= 3:
+                emotion_score += 0.2
+        
+        score = base_score + emotion_score
+        score = min(score, 1.0)
+        
+        return score, {"emotion_count": emotion_count}
+    
+    def _check_relationships(self, content: str, char_data: Dict) -> tuple[float, Dict]:
+        """检查人物关系"""
         relationships = char_data.get("relationships", {})
         
-        if not relationships:
-            return {"score": 0.5, "matches": {}}
-        
-        total_score = 0
+        base_score = 0.5
+        relation_found = False
+        keyword_hits = 0
         match_details = {}
         
         for related_char, keywords in relationships.items():
             if related_char in content:
-                matches = [kw for kw in keywords if kw in content]
-                if matches:
-                    score = min(len(matches) / 2, 1.0)
-                    total_score += score
-                    match_details[related_char] = {
-                        "score": score,
-                        "matches": matches
-                    }
+                relation_found = True
+                hits = [kw for kw in keywords if kw in content]
+                if hits:
+                    keyword_hits += len(hits)
+                match_details[related_char] = {"hits": hits}
         
-        avg_score = total_score / len(relationships) if relationships else 0.5
+        dynamic_score = 0.0
+        if relation_found:
+            dynamic_score = 0.25
+        if keyword_hits >= 2:
+            dynamic_score += 0.15
+        if keyword_hits >= 4:
+            dynamic_score += 0.1
         
-        return {
-            "score": avg_score,
-            "matches": match_details
-        }
+        score = base_score + dynamic_score
+        score = min(score, 1.0)
+        
+        return score, {"hits": match_details, "keyword_hits": keyword_hits}
 
 
 # 便捷函数
@@ -184,7 +204,6 @@ def score_content(content: str, characters: List[str]) -> Dict[str, Any]:
     for char in characters:
         results[char] = scorer.score_character(content, char)
     
-    # 计算平均分
     avg_score = sum(r["total_score"] for r in results.values()) / len(results) if results else 0
     
     return {
@@ -193,25 +212,75 @@ def score_content(content: str, characters: List[str]) -> Dict[str, Any]:
     }
 
 
+def generate_score_report(content: str, characters: List[str]) -> str:
+    """
+    生成详细评分报告
+    
+    Args:
+        content: 待评分内容
+        characters: 需要评分的人物列表
+    
+    Returns:
+        格式化的评分报告字符串
+    """
+    result = score_content(content, characters)
+    
+    report_lines = [
+        "=" * 60,
+        "📝 人物一致性评分报告",
+        "=" * 60,
+        f"\n📊 综合评分: {result['overall_score']:.2f}/10.0",
+        f"\n质量等级: {_get_quality_level(result['overall_score'])}",
+    ]
+    
+    for char, score_data in result['individual_scores'].items():
+        report_lines.append(f"\n{'='*60}")
+        report_lines.append(f"👤 {char}")
+        report_lines.append(f"{'='*60}")
+        report_lines.append(f"  总分: {score_data['total_score']:.2f}")
+        report_lines.append(f"  ├─ 语言风格: {score_data['speech_score']:.2f}")
+        report_lines.append(f"  ├─ 行为特征: {score_data['behavior_score']:.2f}")
+        report_lines.append(f"  ├─ 情感表达: {score_data['emotion_score']:.2f}")
+        report_lines.append(f"  └─ 人物关系: {score_data['relationship_score']:.2f}")
+        
+        # 添加详细匹配信息
+        details = score_data.get('details', {})
+        if 'speech' in details:
+            speech = details['speech']
+            if speech.get('high_matches'):
+                report_lines.append(f"\n  语言关键词命中: {speech['high_matches'][:5]}")
+    
+    report_lines.append("\n" + "=" * 60)
+    return "\n".join(report_lines)
+
+
+def _get_quality_level(score: float) -> str:
+    """获取质量等级"""
+    if score >= 9.0:
+        return "🏆 大师级"
+    elif score >= 8.0:
+        return "✨ 优秀"
+    elif score >= 7.0:
+        return "✅ 良好"
+    elif score >= 6.0:
+        return "📝 合格"
+    elif score >= 5.0:
+        return "⚠️ 待改进"
+    else:
+        return "❌ 需要重写"
+
+
 if __name__ == "__main__":
     # 测试
     test_content = """
-    宝玉笑道："好妹妹，你今日可好些了？"
-    黛玉摇头叹道："还是那样，只是咳嗽得厉害。"
-    宝玉垂泪道："妹妹若有个三长两短，我岂能独活？"
-    黛玉听了，心中感动，亦自垂泪。
+    话说宝玉自那日见了黛玉，心中便放不下。这日早起，便往潇湘馆来。 
+    黛玉正在窗下抚琴，见宝玉进来，便停下手中活儿。 
+    宝玉笑道：'好妹妹，你今日气色比昨日好些了。' 
+    黛玉摇头叹道：'不过是一时罢了，我这身子你是知道的。' 
+    宝玉听了，心中甚是难过，赔笑道：'妹妹何必如此说，我这几日正想着 
+    要去求老太太，请个高明大夫来给你瞧瞧。' 
+    黛玉垂泪道：'你又说这些，我怎当得起。' 
+    二人相对无言，只是叹气。
     """
     
-    result = score_content(test_content, ["宝玉", "黛玉"])
-    
-    print("=" * 60)
-    print("🧪 增强版评分器测试")
-    print("=" * 60)
-    print(f"\n综合评分: {result['overall_score']:.1f}/10.0")
-    
-    for char, score_data in result['individual_scores'].items():
-        print(f"\n👤 {char}:")
-        print(f"  总分: {score_data['total_score']:.1f}")
-        print(f"  语言: {score_data['speech_score']:.1f}")
-        print(f"  行为: {score_data['behavior_score']:.1f}")
-        print(f"  关系: {score_data['relationship_score']:.1f}")
+    print(generate_score_report(test_content, ["宝玉", "黛玉"]))
