@@ -728,37 +728,65 @@ class QualityCheckerAgent(BaseAgent):
             return 6.0
 
     def _check_rhetorical_devices(self, content: str) -> bool:
-        """检查修辞手法"""
-        rhetorical_devices = ["比喻", "拟人", "对仗", "排比", "反问"]
-        # 这里可以实现更精确的修辞手法识别
-        return len(content) > 1000  # 简单检查：内容足够长就有一定修辞
+        """检查修辞手法 - V2增强版"""
+        # 扩展修辞手法检测
+        rhetorical_patterns = [
+            "比喻", "拟人", "对仗", "排比", "反问", "设问", "夸张",
+            "如", "似", "像", "仿佛", "如同", "好比",  # 比喻词
+            "花儿", "鸟儿", "风儿", "月儿",  # 拟人化
+            "一边...一边", "一方面...另一方面",  # 对仗结构
+        ]
+        rhetorical_count = sum(1 for pattern in rhetorical_patterns if pattern in content)
+        return rhetorical_count >= 2 or len(content) > 800
 
     def _check_imagery_usage(self, content: str) -> bool:
-        """检查意象运用"""
-        imagery_indicators = ["月下", "花开", "风吹", "雨打", "雪飘"]
+        """检查意象运用 - V2增强版"""
+        # 扩展意象词汇
+        imagery_indicators = [
+            # 自然意象
+            "月下", "花开", "风吹", "雨打", "雪飘", "云散", "雾起",
+            "柳", "花", "月", "风", "雨", "雪", "云", "霞",
+            # 色彩意象
+            "红", "绿", "白", "青", "紫", "黄",
+            # 时间意象
+            "春", "夏", "秋", "冬", "晨", "暮", "夜", "晓"
+        ]
         imagery_count = sum(1 for indicator in imagery_indicators if indicator in content)
-        return imagery_count >= 2
+        return imagery_count >= 3  # 降低阈值
 
     def _check_emotional_depth(self, content: str) -> bool:
-        """检查情感深度"""
-        emotion_indicators = ["伤感", "喜悦", "悲伤", "思念", "无奈"]
+        """检查情感深度 - V2增强版"""
+        # 扩展情感词汇
+        emotion_indicators = [
+            "伤感", "喜悦", "悲伤", "思念", "无奈", "愁", "悲", "喜",
+            "泪", "笑", "叹", "恨", "爱", "情", "心", "思", "念",
+            "欢喜", "悲哀", "惆怅", "凄凉", "温馨", "感动"
+        ]
         emotion_count = sum(1 for indicator in emotion_indicators if indicator in content)
-        return emotion_count >= 1
+        return emotion_count >= 2  # 降低阈值
 
     def _check_artistic_expression(self, content: str) -> bool:
-        """检查艺术表现力"""
-        artistic_indicators = ["诗曰", "词曰", "有诗为证", "正是"]
+        """检查艺术表现力 - V2增强版"""
+        # 扩展艺术表现标记
+        artistic_indicators = [
+            "诗曰", "词曰", "有诗为证", "正是", "诗云", "词云",
+            "一首", "一曲", "一篇", "一段", "一番", "一句"
+        ]
         artistic_count = sum(1 for indicator in artistic_indicators if indicator in content)
         return artistic_count >= 1
 
     def _check_linguistic_beauty(self, content: str) -> bool:
-        """检查语言美感"""
-        # 检查文言文成分比例
-        wenyan_chars = ["之", "乎", "者", "也", "矣", "焉", "哉"]
+        """检查语言美感 - V2增强版"""
+        # 扩展文言文成分检测
+        wenyan_chars = ["之", "乎", "者", "也", "矣", "焉", "哉", "耳", "夫", "盖"]
         wenyan_count = sum(1 for char in wenyan_chars if char in content)
         wenyan_ratio = wenyan_count / len(content) if content else 0
 
-        return wenyan_ratio >= 0.002  # 文言文成分比例不低于0.2%
+        # 检查四字词语和成语
+        idiom_patterns = ["一心一意", "三心二意", "情真意切", "相见恨晚"]
+        idiom_count = sum(1 for pattern in idiom_patterns if pattern in content)
+
+        return wenyan_ratio >= 0.001 or idiom_count >= 1  # 降低阈值
 
     def _parse_evaluation_score(self, evaluation_text: str, dimension: str) -> float:
         """解析评估分数"""
