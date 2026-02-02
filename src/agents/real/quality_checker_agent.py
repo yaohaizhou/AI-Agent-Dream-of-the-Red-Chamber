@@ -245,15 +245,15 @@ class QualityCheckerAgent(BaseAgent):
 
                     # 方法3: 行为匹配 (辅助)
                     behavior_matches = self._check_behavior_consistency(content, char_name, char_info)
-                    score += behavior_matches * 0.15
+                    score += behavior_matches * 0.2  # 增加行为匹配权重
 
                     # 方法4: 对话匹配 (辅助)
                     dialogue_matches = self._check_dialogue_consistency(content, char_name, char_info)
-                    score += dialogue_matches * 0.15
+                    score += dialogue_matches * 0.2  # 增加对话匹配权重
 
                     # 方法5: 关系匹配 (辅助)
                     relationship_matches = self._check_relationship_consistency(content, char_name, characters)
-                    score += relationship_matches * 0.1
+                    score += relationship_matches * 0.15  # 增加关系匹配权重
 
             # 如果没有找到任何主要人物，扣分
             if evaluated_characters == 0 and characters:
@@ -313,10 +313,10 @@ class QualityCheckerAgent(BaseAgent):
         behavior_score = 0
         for kw in behavior.get("actions", []):
             if kw in content_lower:
-                behavior_score += 0.2
+                behavior_score += 0.25  # 增加动作权重
         for kw in behavior.get("emotions", []):
             if kw in content_lower:
-                behavior_score += 0.15
+                behavior_score += 0.2  # 增加情感权重
         scores.append(min(behavior_score, 1.0))
         
         # 3. 关系评分

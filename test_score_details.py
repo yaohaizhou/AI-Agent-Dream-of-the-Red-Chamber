@@ -62,14 +62,14 @@ for char_name, char_info in characters.items():
         
         # 行为匹配
         behavior = agent._check_behavior_consistency(test_content, char_name, char_info)
-        behavior_contrib = behavior * 0.15
-        print(f"  行为匹配: {behavior:.2f} × 0.15 = +{behavior_contrib:.2f}")
+        behavior_contrib = behavior * 0.2
+        print(f"  行为匹配: {behavior:.2f} × 0.2 = +{behavior_contrib:.2f}")
         total_score += behavior_contrib
         
         # 对话匹配
         dialogue = agent._check_dialogue_consistency(test_content, char_name, char_info)
-        dialogue_contrib = dialogue * 0.15
-        print(f"  对话匹配: {dialogue:.2f} × 0.15 = +{dialogue_contrib:.2f}")
+        dialogue_contrib = dialogue * 0.2
+        print(f"  对话匹配: {dialogue:.2f} × 0.2 = +{dialogue_contrib:.2f}")
         total_score += dialogue_contrib
 
 print(f"\n{'='*60}")
