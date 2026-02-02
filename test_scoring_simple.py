@@ -115,10 +115,11 @@ async def test_character_scoring():
         print(f"\n--- 测试案例 {i}: {case['name']} ---")
         
         # 测试评分
-        score = await checker.evaluate_character_consistency(
+        result = await checker.check_consistency(
             case['content'], 
             {name: checker.character_profiles[name] for name in case['expected_chars']}
         )
+        score = result.get('overall_score', 0.0)
         
         print(f"📊 人物一致性评分: {score:.2f}/10.0")
         
