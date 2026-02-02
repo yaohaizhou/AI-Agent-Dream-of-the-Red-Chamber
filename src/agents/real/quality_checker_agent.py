@@ -235,7 +235,7 @@ class QualityCheckerAgent(BaseAgent):
                     # 方法1: 使用新关键词库进行增强评分 (权重最高)
                     enhanced_score = self._check_with_keywords_db(content, char_name)
                     if enhanced_score > 0:
-                        score += enhanced_score * 0.8  # 新评分占80%权重
+                        score += enhanced_score * 1.0  # 新评分占100%权重 (大幅提高)
                     
                     # 方法2: 原有性格匹配逻辑 (辅助)
                     personality_traits = char_info.get("性格", "")
