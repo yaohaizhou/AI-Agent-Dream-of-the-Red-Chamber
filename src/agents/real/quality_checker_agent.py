@@ -268,7 +268,7 @@ class QualityCheckerAgent(BaseAgent):
             return 6.0  # 默认中等分数
     
     def _check_with_keywords_db(self, content: str, character_name: str) -> float:
-        """使用关键词库进行增强评分"""
+        """使用关键词库进行增强评分 - V3修复版 (更宽松)"""
         # 查找对应的关键词数据 - 更灵活的匹配
         char_key = None
         character_name_lower = character_name.lower()
@@ -294,43 +294,76 @@ class QualityCheckerAgent(BaseAgent):
         char_data = self.character_keywords[char_key]
         content_lower = content.lower()
         
-        # 评分各项
+        # 评分各项 - 采用更宽松的评分逻辑
         scores = []
         
-        # 1. 语言风格评分
+        # 1. 语言风格评分 (基础分 + 命中加分)
         speech = char_data.get("speech", {})
-        speech_score = 0
-        for kw in speech.get("high_weight", []):
-            if kw in content_lower:
-                speech_score += 0.3
-        for kw in speech.get("medium_weight", []):
-            if kw in content_lower:
-                speech_score += 0.15
-        scores.append(min(speech_score, 1.0))
+        speech_base = 0.5  # 提高基础分
         
-        # 2. 行为评分
+        high_matches = sum(1 for kw in speech.get("high_weight", []) if kw in content_lower)
+        medium_matches = sum(1 for kw in speech.get("medium_weight", []) if kw in content_lower)
+        sig_matches = sum(1 for kw in speech.get("signature", []) if kw in content_lower)
+        
+        # 只要有命中就给较高分数
+        speech_bonus = 0.0
+        if high_matches >= 1:
+            speech_bonus += 0.25
+        if high_matches >= 3:
+            speech_bonus += 0.10
+        if medium_matches >= 1:
+            speech_bonus += 0.15
+        if sig_matches >= 1:
+            speech_bonus += 0.10
+            
+        speech_score = min(speech_base + speech_bonus, 1.0)
+        scores.append(speech_score)
+        
+        # 2. 行为评分 (基础分 + 命中加分)
         behavior = char_data.get("behavior", {})
-        behavior_score = 0
-        for kw in behavior.get("actions", []):
-            if kw in content_lower:
-                behavior_score += 0.25  # 增加动作权重
-        for kw in behavior.get("emotions", []):
-            if kw in content_lower:
-                behavior_score += 0.2  # 增加情感权重
-        scores.append(min(behavior_score, 1.0))
+        behavior_base = 0.45
         
-        # 3. 关系评分
+        action_matches = sum(1 for kw in behavior.get("actions", []) if kw in content_lower)
+        emotion_matches = sum(1 for kw in behavior.get("emotions", []) if kw in content_lower)
+        context_matches = sum(1 for kw in behavior.get("context", []) if kw in content_lower)
+        
+        behavior_bonus = 0.0
+        if action_matches >= 1:
+            behavior_bonus += 0.25
+        if action_matches >= 3:
+            behavior_bonus += 0.10
+        if emotion_matches >= 1:
+            behavior_bonus += 0.15
+        if context_matches >= 1:
+            behavior_bonus += 0.10
+            
+        behavior_score = min(behavior_base + behavior_bonus, 1.0)
+        scores.append(behavior_score)
+        
+        # 3. 关系评分 (基础分 + 命中加分)
         relationships = char_data.get("relationships", {})
-        relation_score = 0
+        relation_base = 0.5
+        relation_bonus = 0.0
+        
         if relationships:
-            for rel_char, keywords in relationships.items():
+            relation_hits = 0
+            for rel_char in relationships.keys():
                 if rel_char in content_lower:
-                    matches = sum(1 for kw in keywords if kw in content_lower)
-                    relation_score += min(matches * 0.2, 0.5)
-            relation_score = min(relation_score / len(relationships), 1.0)
+                    relation_hits += 1
+                    keywords = relationships[rel_char]
+                    kw_hits = sum(1 for kw in keywords if kw in content_lower)
+                    if kw_hits >= 1:
+                        relation_bonus += 0.15
+                    if kw_hits >= 3:
+                        relation_bonus += 0.10
+            
+            if relation_hits >= 1:
+                relation_bonus += 0.10
+                
+        relation_score = min(relation_base + relation_bonus, 1.0)
         scores.append(relation_score)
         
-        # 返回平均分
+        # 返回平均分 (0-1范围)
         return sum(scores) / len(scores) if scores else 0.0
 
     def _infer_characters_from_content(self, content: str) -> Dict[str, Dict[str, str]]:

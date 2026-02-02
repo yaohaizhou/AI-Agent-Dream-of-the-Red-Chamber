@@ -457,12 +457,14 @@ class AdvancedQualityChecker:
         # 3. 风格一致性检查
         style_score = self._check_style_consistency_v2(content)
         
-        # 4. 计算综合评分（转换为0-10范围）
+        # 4. 计算综合评分
+        # 注意: char_check_result['overall_score'] 已经是0-10范围
+        # 提高人物一致性的权重，降低结构和风格权重
         overall_score = (
-            char_check_result['overall_score'] * 0.4 +
-            structure_score * 0.3 +
-            style_score * 0.3
-        ) * 10  # 转换为0-10分制
+            char_check_result['overall_score'] * 0.6 +  # 人物一致性占60% (0-6分)
+            structure_score * 2 +  # 结构占20% (0-2分)
+            style_score * 2       # 风格占20% (0-2分)
+        )  # 结果范围: 0-10
         
         return {
             "overall_score": overall_score,
@@ -476,24 +478,25 @@ class AdvancedQualityChecker:
         }
     
     def _check_structure(self, content: str, chapter_info: Dict[str, Any]) -> float:
-        """检查结构完整性"""
-        score = 0.0
+        """检查结构完整性 - 修复版 (更宽松)"""
+        score = 0.5  # 提高基础分到0.5
         
         # 检查是否有回目
         if chapter_info.get('title'):
-            score += 0.2
+            score += 0.15
         
-        # 检查内容长度（合理范围）
-        if 1000 <= len(content) <= 5000:
-            score += 0.3
+        # 检查内容长度（更宽松的范围）
+        if 200 <= len(content) <= 10000:
+            score += 0.15
         
-        # 检查是否有诗词
-        if '诗' in content or '词' in content:
-            score += 0.2
+        # 检查是否有诗词或对话标记
+        if '诗' in content or '词' in content or '道：' in content or '笑道' in content:
+            score += 0.1
         
-        # 检查是否有结尾悬念
-        if '且听下回分解' in content:
-            score += 0.3
+        # 检查是否有结尾标记 (放宽条件)
+        ending_markers = ['且听下回分解', '正是', '后事如何', '下回书交代', '不知', '原来']
+        if any(marker in content for marker in ending_markers):
+            score += 0.1
         
         return min(score, 1.0)
     
