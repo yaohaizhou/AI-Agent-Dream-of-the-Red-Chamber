@@ -216,7 +216,7 @@ class QualityCheckerAgent(BaseAgent):
         return min(score, 10.0)
 
     async def _evaluate_character_accuracy(self, content: str, context: Dict[str, Any]) -> float:
-        """评估人物塑造准确性"""
+        """评估人物塑造准确性 - V2增强版"""
         try:
             # 获取人物信息
             characters = context.get("characters", {})
@@ -232,23 +232,28 @@ class QualityCheckerAgent(BaseAgent):
                 if char_name in content:
                     evaluated_characters += 1
                     
-                    # 检查性格特征是否符合
+                    # 方法1: 使用新关键词库进行增强评分
+                    enhanced_score = self._check_with_keywords_db(content, char_name)
+                    if enhanced_score > 0:
+                        score += enhanced_score * 0.5  # 新评分占50%权重
+                    
+                    # 方法2: 原有性格匹配逻辑
                     personality_traits = char_info.get("性格", "")
                     if personality_traits:
                         trait_matches = self._check_personality_match(content, char_name, personality_traits)
-                        score += trait_matches * 0.8  # 性格匹配权重较高
+                        score += trait_matches * 0.4  # 原评分占40%权重
 
-                    # 检查行为逻辑是否符合人物设定
+                    # 方法3: 行为匹配
                     behavior_matches = self._check_behavior_consistency(content, char_name, char_info)
-                    score += behavior_matches * 0.6
+                    score += behavior_matches * 0.3
 
-                    # 检查对话风格是否符合人物身份
+                    # 方法4: 对话匹配
                     dialogue_matches = self._check_dialogue_consistency(content, char_name, char_info)
-                    score += dialogue_matches * 0.7
+                    score += dialogue_matches * 0.3
 
-                    # 检查人物与其他角色的互动是否符合设定
+                    # 方法5: 关系匹配
                     relationship_matches = self._check_relationship_consistency(content, char_name, characters)
-                    score += relationship_matches * 0.5
+                    score += relationship_matches * 0.2
 
             # 如果没有找到任何主要人物，扣分
             if evaluated_characters == 0 and characters:
@@ -261,6 +266,60 @@ class QualityCheckerAgent(BaseAgent):
             import traceback
             print(f"错误详情:\n{traceback.format_exc()}")
             return 6.0  # 默认中等分数
+    
+    def _check_with_keywords_db(self, content: str, character_name: str) -> float:
+        """使用关键词库进行增强评分"""
+        # 查找对应的关键词数据
+        char_key = None
+        for key in self.character_keywords.keys():
+            if key in character_name or character_name in key:
+                char_key = key
+                break
+        
+        if not char_key:
+            return 0.0
+        
+        char_data = self.character_keywords[char_key]
+        content_lower = content.lower()
+        
+        # 评分各项
+        scores = []
+        
+        # 1. 语言风格评分
+        speech = char_data.get("speech", {})
+        speech_score = 0
+        for kw in speech.get("high_weight", []):
+            if kw in content_lower:
+                speech_score += 0.3
+        for kw in speech.get("medium_weight", []):
+            if kw in content_lower:
+                speech_score += 0.15
+        scores.append(min(speech_score, 1.0))
+        
+        # 2. 行为评分
+        behavior = char_data.get("behavior", {})
+        behavior_score = 0
+        for kw in behavior.get("actions", []):
+            if kw in content_lower:
+                behavior_score += 0.2
+        for kw in behavior.get("emotions", []):
+            if kw in content_lower:
+                behavior_score += 0.15
+        scores.append(min(behavior_score, 1.0))
+        
+        # 3. 关系评分
+        relationships = char_data.get("relationships", {})
+        relation_score = 0
+        if relationships:
+            for rel_char, keywords in relationships.items():
+                if rel_char in content_lower:
+                    matches = sum(1 for kw in keywords if kw in content_lower)
+                    relation_score += min(matches * 0.2, 0.5)
+            relation_score = min(relation_score / len(relationships), 1.0)
+        scores.append(relation_score)
+        
+        # 返回平均分
+        return sum(scores) / len(scores) if scores else 0.0
 
     def _infer_characters_from_content(self, content: str) -> Dict[str, Dict[str, str]]:
         """
