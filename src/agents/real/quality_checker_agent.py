@@ -18,6 +18,7 @@ from ..base import BaseAgent, AgentResult
 from ..gpt5_client import get_gpt5_client
 from ...config.settings import Settings
 from ...prompts.literary_prompts import get_literary_prompts
+from ...utils.base_scorer import ScoreConfig, StyleEvaluator, StructureEvaluator, safe_score
 
 
 class QualityCheckerAgent(BaseAgent):
@@ -34,6 +35,11 @@ class QualityCheckerAgent(BaseAgent):
         
         # 加载增强版关键词库
         self.character_keywords = self._load_character_keywords()
+        
+        # 初始化评估器
+        self.style_evaluator = StyleEvaluator()
+        self.structure_evaluator = StructureEvaluator()
+        self.score_config = ScoreConfig()
     
     def _load_character_keywords(self) -> Dict[str, Any]:
         """加载人物关键词库"""
@@ -196,37 +202,8 @@ class QualityCheckerAgent(BaseAgent):
             return self._fallback_style_evaluation(content)
 
     def _fallback_style_evaluation(self, content: str) -> float:
-        """备用风格评估方法 - V2增强版"""
-        score = 6.0  # 提高基础分数
-
-        # 1. 检查古典文学特征词
-        classical_indicators = [
-            "话说", "原来", "却说", "且听下回分解", "正是",
-            "诗曰", "词曰", "只见", "但见", "忽见", "忽听",
-            "次日", "当下", "且说", "不说", "再说"
-        ]
-        indicator_count = sum(1 for indicator in classical_indicators if indicator in content)
-        score += min(indicator_count * 0.6, 3.5)
-
-        # 2. 检查文言文虚词成分
-        wenyan_indicators = ["之", "乎", "者", "也", "矣", "焉", "哉", "耳", "乎", "耶"]
-        wenyan_count = sum(1 for indicator in wenyan_indicators if indicator in content)
-        score += min(wenyan_count * 0.3, 2.0)
-
-        # 3. 检查《红楼梦》特色词汇
-        hongloumeng_indicators = [
-            "丫鬟", "嬷嬷", "太太", "老太太", "老爷", "奶奶", "姑娘",
-            "小姐", "公子", "爷", "奴才", "婢子", "小的"
-        ]
-        hongloumeng_count = sum(1 for indicator in hongloumeng_indicators if indicator in content)
-        score += min(hongloumeng_count * 0.4, 2.0)
-
-        # 4. 检查对话标记
-        dialogue_markers = ["道", "说道", "笑道", "叹道", "问道", "答道", "忙道"]
-        dialogue_count = sum(1 for marker in dialogue_markers if marker in content)
-        score += min(dialogue_count * 0.3, 1.5)
-
-        return min(score, 10.0)
+        """备用风格评估方法 - 使用基类StyleEvaluator"""
+        return self.style_evaluator.evaluate(content)
 
     async def _evaluate_character_accuracy(self, content: str, context: Dict[str, Any]) -> float:
         """评估人物塑造准确性 - V2增强版"""
