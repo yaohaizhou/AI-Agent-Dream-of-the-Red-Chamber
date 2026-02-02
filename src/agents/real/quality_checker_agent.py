@@ -232,28 +232,28 @@ class QualityCheckerAgent(BaseAgent):
                 if char_name in content:
                     evaluated_characters += 1
                     
-                    # 方法1: 使用新关键词库进行增强评分
+                    # 方法1: 使用新关键词库进行增强评分 (权重最高)
                     enhanced_score = self._check_with_keywords_db(content, char_name)
                     if enhanced_score > 0:
-                        score += enhanced_score * 0.5  # 新评分占50%权重
+                        score += enhanced_score * 0.8  # 新评分占80%权重
                     
-                    # 方法2: 原有性格匹配逻辑
+                    # 方法2: 原有性格匹配逻辑 (辅助)
                     personality_traits = char_info.get("性格", "")
                     if personality_traits:
                         trait_matches = self._check_personality_match(content, char_name, personality_traits)
-                        score += trait_matches * 0.4  # 原评分占40%权重
+                        score += trait_matches * 0.2  # 原评分占20%权重
 
-                    # 方法3: 行为匹配
+                    # 方法3: 行为匹配 (辅助)
                     behavior_matches = self._check_behavior_consistency(content, char_name, char_info)
-                    score += behavior_matches * 0.3
+                    score += behavior_matches * 0.15
 
-                    # 方法4: 对话匹配
+                    # 方法4: 对话匹配 (辅助)
                     dialogue_matches = self._check_dialogue_consistency(content, char_name, char_info)
-                    score += dialogue_matches * 0.3
+                    score += dialogue_matches * 0.15
 
-                    # 方法5: 关系匹配
+                    # 方法5: 关系匹配 (辅助)
                     relationship_matches = self._check_relationship_consistency(content, char_name, characters)
-                    score += relationship_matches * 0.2
+                    score += relationship_matches * 0.1
 
             # 如果没有找到任何主要人物，扣分
             if evaluated_characters == 0 and characters:
@@ -269,14 +269,26 @@ class QualityCheckerAgent(BaseAgent):
     
     def _check_with_keywords_db(self, content: str, character_name: str) -> float:
         """使用关键词库进行增强评分"""
-        # 查找对应的关键词数据
+        # 查找对应的关键词数据 - 更灵活的匹配
         char_key = None
+        character_name_lower = character_name.lower()
+        
+        # 直接匹配
         for key in self.character_keywords.keys():
-            if key in character_name or character_name in key:
+            key_lower = key.lower()
+            # 检查是否互相包含，或者简化的名字匹配
+            if (key_lower in character_name_lower or 
+                character_name_lower in key_lower or
+                (len(key) >= 2 and key in character_name) or
+                # 特殊处理: 贾宝玉 -> 宝玉, 林黛玉 -> 黛玉
+                (key == "宝玉" and ("宝玉" in character_name or "贾宝玉" in character_name)) or
+                (key == "黛玉" and ("黛玉" in character_name or "林黛玉" in character_name)) or
+                (key == "宝钗" and ("宝钗" in character_name or "薛宝钗" in character_name))):
                 char_key = key
                 break
         
         if not char_key:
+            print(f"[DEBUG] 未找到人物: {character_name}, 可用键: {list(self.character_keywords.keys())}")
             return 0.0
         
         char_data = self.character_keywords[char_key]
