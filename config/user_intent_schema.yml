@@ -1,0 +1,89 @@
+# 用户意图配置 Schema
+# 定义用户意图的结构规范
+
+schema_version: "1.0"
+description: 用户意图三层配置结构
+
+# 第一层：宏观结局
+宏观结局:
+  type: object
+  required: [type, description]
+  properties:
+    type:
+      type: string
+      enum: [宝黛终成眷属, 黛玉泪尽而亡, 宝玉出家, 自定义]
+      description: 结局类型
+    description:
+      type: string
+      description: 结局详细描述
+    compatibility:
+      type: string
+      description: 与原著兼容性说明
+
+# 第二层：中观路线
+中观路线:
+  type: object
+  properties:
+    宝黛爱情线:
+      type: object
+      properties:
+        发展阶段:
+          type: array
+          items:
+            type: object
+            properties:
+              章节范围: string
+              主题: string
+              情感基调: string
+              关键事件: array
+        关键转折设计:
+          type: object
+          additionalProperties:
+            type: object
+            properties:
+              事件: string
+              情感冲击: string
+              用户要求: string
+    
+    贾府兴衰线:
+      type: object
+      properties:
+        发展阶段:
+          type: array
+          items:
+            type: object
+            properties:
+              章节范围: string
+              主题: string
+              情感基调: string
+              关键事件: array
+
+# 第三层：微观控制
+微观控制:
+  type: object
+  properties:
+    人物性格强化:
+      type: object
+      additionalProperties:
+        type: object
+        properties:
+          突出特质: string
+          避免特质: string
+          新增特质: string
+    
+    风格偏好:
+      type: object
+      properties:
+        诗词数量: string
+        对话比例: string
+        情感基调: string
+        章节长度: string
+        情节密度: string
+        悬念设置: string
+    
+    节奏控制:
+      type: object
+      properties:
+        章节长度: string
+        情节密度: string
+        悬念设置: string
