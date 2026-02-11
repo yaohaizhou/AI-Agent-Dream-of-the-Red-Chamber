@@ -20,9 +20,6 @@ scikit-learn>=1.1.0
 pyyaml>=6.0
 python-dotenv>=1.0.0
 
-# SQLite数据库
-sqlite3
-
 # Web界面 (可选，用于演示)
 flask>=2.2.0
 
@@ -32,6 +29,3 @@ flake8>=4.0.0
 
 # 测试框架
 pytest>=7.1.0
-
-# 日志处理
-python-logging
