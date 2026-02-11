@@ -164,4 +164,3 @@ cython_debug/
 
 # 忽略AI续写项目生成的缓存和输出文件
 /output/cache/
-/output/red_chamber_continuation_*/
