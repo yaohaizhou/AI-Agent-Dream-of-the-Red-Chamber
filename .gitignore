@@ -103,7 +103,7 @@ ipython_config.py
 .pdm-python
 .pdm-build/
 
-# PEP 582; used by e.g. github.com/David-OConnor/pyflow and github.com/pdm-project/pdm
+# PEP 582; used by e.com/David-OConnor/pyflow and github.com/pdm-project/pdm
 __pypackages__/
 
 # Celery stuff
@@ -161,3 +161,7 @@ cython_debug/
 # Agent local configuration
 .env
 *_agent/config/*.yml
+
+# 忽略AI续写项目生成的缓存和输出文件
+/output/cache/
+/output/red_chamber_continuation_*/
