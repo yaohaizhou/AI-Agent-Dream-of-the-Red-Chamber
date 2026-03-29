@@ -21,6 +21,8 @@ class ForeshadowingKnowledgeBase:
     ):
         self.canonical: List[Dict[str, Any]] = []
         path = Path(canonical_path)
+        if not path.is_absolute():
+            path = Path(__file__).resolve().parents[2] / path
         if path.exists():
             self.canonical = json.loads(path.read_text(encoding="utf-8"))
 

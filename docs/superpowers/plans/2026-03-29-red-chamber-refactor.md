@@ -2362,7 +2362,7 @@ git commit -m "feat: add ProphecyAnalyst + canonical prophecy data, complete Tas
 **Files:**
 - Create: `src/knowledge/foreshadowing_kb.py`
 
-- [ ] **Step 1: 实现 ForeshadowingKnowledgeBase**
+- [x] **Step 1: 实现 ForeshadowingKnowledgeBase**
 
 `src/knowledge/foreshadowing_kb.py`:
 
@@ -2420,7 +2420,7 @@ class ForeshadowingKnowledgeBase:
                 break
 ```
 
-- [ ] **Step 2: 快速验证**
+- [x] **Step 2: 快速验证**
 
 ```bash
 python3 -c "
@@ -2435,7 +2435,7 @@ print('active_threads count:', len(tasks.active_threads))
 
 Expected: 打印出 must_payoff 列表（第83回在元春伏笔的兑现范围内）
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add src/knowledge/foreshadowing_kb.py
