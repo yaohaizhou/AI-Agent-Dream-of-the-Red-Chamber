@@ -2450,7 +2450,7 @@ git commit -m "feat: add ForeshadowingKnowledgeBase with canonical foreshadowing
 - Create: `src/story/director.py`
 - Create: `run_continuation.py`（替换旧入口）
 
-- [ ] **Step 1: 实现 StoryDirector**
+- [x] **Step 1: 实现 StoryDirector**
 
 `src/story/director.py`:
 
@@ -2512,7 +2512,7 @@ class StoryDirector:
         )
 ```
 
-- [ ] **Step 2: 实现连续多回入口**
+- [x] **Step 2: 实现连续多回入口**
 
 `run_continuation.py`:
 
@@ -2627,7 +2627,7 @@ if __name__ == "__main__":
     asyncio.run(main(args.chapters, args.hints))
 ```
 
-- [ ] **Step 3: 运行连续3回测试**
+- [x] **Step 3: 运行连续3回测试**
 
 ```bash
 python3 run_continuation.py --chapters 3
@@ -2635,7 +2635,7 @@ python3 run_continuation.py --chapters 3
 
 Expected: 输出目录内有 chapter_081.md、chapter_082.md、chapter_083.md，每回得分均有打印
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add src/story/director.py run_continuation.py
