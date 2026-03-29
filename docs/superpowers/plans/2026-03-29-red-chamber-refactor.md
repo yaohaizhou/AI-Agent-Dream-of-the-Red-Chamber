@@ -1501,112 +1501,858 @@ git commit -m "feat: Phase 1 complete - run_ch81.py end-to-end generation with R
 
 ---
 
-### Task 9：StoryState
+### Task 9a：state_schema.py — 五层数据结构
 
 **Files:**
-- Create: `src/story/state.py`
+- Create: `src/story/state_schema.py`
 
-- [ ] **Step 1: 实现 StoryState**
+- [ ] **Step 1: 写失败测试**
 
-`src/story/state.py`:
+`tests/story/__init__.py`（空文件，先创建目录）:
+
+```bash
+mkdir -p tests/story
+touch tests/story/__init__.py
+```
+
+`tests/story/test_story_state.py`（先写测试，后面 Task 9b 实现代码时运行）:
 
 ```python
-"""StoryState：持久化故事进度，跨章节共享。"""
+import json
+import pytest
+from pathlib import Path
+
+from src.story.state_schema import (
+    ProphecyAnchor,
+    CharacterStateEntry,
+    ToneRecord,
+    NarrativePacing,
+    ForeshadowingDebt,
+)
+from src.story.story_state import StoryState, SceneHints
+
+
+# ── Fixtures ──────────────────────────────────────────────────────────────
+
+def make_state_with_debt(urgency_weight: float, chapters_since_hint: int) -> StoryState:
+    state = StoryState()
+    state.foreshadowing_debts = [
+        ForeshadowingDebt(
+            id="fd_001",
+            description="黛玉泪尽而逝",
+            source="原著第5回",
+            keywords=["泪尽", "香消"],
+            planted_at_chapter=5,
+            last_hinted_chapter=75,
+            chapters_since_hint=chapters_since_hint,
+            urgency_weight=urgency_weight,
+            status="pending",
+        )
+    ]
+    return state
+
+
+# ── StoryState 基础 ────────────────────────────────────────────────────────
+
+def test_initial_state_has_chapter_80():
+    state = StoryState()
+    assert state.current_chapter == 80
+
+
+def test_to_scene_hints_returns_scene_hints_type():
+    state = StoryState()
+    hints = state.to_scene_hints(characters=["贾宝玉"])
+    assert isinstance(hints, SceneHints)
+
+
+def test_to_scene_hints_uses_chapter_summary_as_previous_summary():
+    state = StoryState()
+    state.chapter_summary = "第81回：宝黛秋日相遇，各怀心事。"
+    hints = state.to_scene_hints(characters=[])
+    assert hints.previous_summary == "第81回：宝黛秋日相遇，各怀心事。"
+
+
+def test_to_scene_hints_high_urgency_debt_in_must_payoff():
+    state = make_state_with_debt(urgency_weight=0.8, chapters_since_hint=0)
+    hints = state.to_scene_hints(characters=[])
+    assert any("黛玉泪尽而逝" in item for item in hints.foreshadowing_must_payoff)
+
+
+def test_to_scene_hints_overdue_debt_in_must_payoff():
+    """chapters_since_hint >= 8 应强制进入 must_payoff"""
+    state = make_state_with_debt(urgency_weight=0.2, chapters_since_hint=9)
+    hints = state.to_scene_hints(characters=[])
+    assert any("黛玉泪尽而逝" in item for item in hints.foreshadowing_must_payoff)
+
+
+def test_to_scene_hints_thematic_keywords_in_should_plant():
+    state = StoryState()
+    state.current_thematic_keywords = ["秋", "竹影", "药香"]
+    hints = state.to_scene_hints(characters=[])
+    for kw in ["秋", "竹影", "药香"]:
+        assert kw in hints.foreshadowing_should_plant
+
+
+def test_to_scene_hints_suggests_emotional_tone_from_character():
+    state = StoryState()
+    state.character_states["林黛玉"] = CharacterStateEntry(
+        health_trend="衰退",
+        emotional_center="凄婉",
+        last_scene_chapter=81,
+        notes="",
+    )
+    hints = state.to_scene_hints(characters=["林黛玉"])
+    assert "凄婉" in hints.suggested_emotional_tone
+
+
+# ── 持久化 ─────────────────────────────────────────────────────────────────
+
+def test_save_creates_chapter_file(tmp_path):
+    state = StoryState(_state_dir=str(tmp_path))
+    state.chapter_summary = "宝黛相遇。"
+    saved_path = state.save(chapter_num=81)
+    assert saved_path.exists()
+    assert "state_ch081" in saved_path.name
+
+
+def test_load_roundtrip_preserves_fields(tmp_path):
+    state = StoryState(_state_dir=str(tmp_path))
+    state.current_chapter = 81
+    state.chapter_summary = "第81回摘要。"
+    state.current_thematic_keywords = ["秋", "残荷"]
+    state.character_states["贾宝玉"] = CharacterStateEntry(
+        health_trend="平稳",
+        emotional_center="怅惘",
+        last_scene_chapter=81,
+        notes="丢玉征兆",
+    )
+    saved_path = state.save(chapter_num=81)
+
+    loaded = StoryState.load(str(saved_path))
+    assert loaded.current_chapter == 81
+    assert loaded.chapter_summary == "第81回摘要。"
+    assert loaded.current_thematic_keywords == ["秋", "残荷"]
+    assert loaded.character_states["贾宝玉"].emotional_center == "怅惘"
+
+
+def test_load_latest_returns_newest_snapshot(tmp_path):
+    for ch in [81, 82, 83]:
+        s = StoryState(_state_dir=str(tmp_path))
+        s.current_chapter = ch
+        s.save(chapter_num=ch)
+
+    latest = StoryState.load_latest(str(tmp_path))
+    assert latest.current_chapter == 83
+
+
+def test_load_latest_returns_default_when_dir_empty(tmp_path):
+    state = StoryState.load_latest(str(tmp_path))
+    assert state.current_chapter == 80
+
+
+# ── update_from_analysis ───────────────────────────────────────────────────
+
+def test_update_increments_chapters_since_hint():
+    from src.story.prophecy_analyst import AnalysisResult
+    state = make_state_with_debt(urgency_weight=0.3, chapters_since_hint=3)
+    result = AnalysisResult(
+        chapter_num=82,
+        chapter_summary="贾府近况。",
+        detected_prophecy_ids=[],
+        resolved_debt_ids=[],
+        new_thematic_keywords=["秋"],
+        tone="衰寂",
+        ending_type="悬念",
+    )
+    state.update_from_analysis(result)
+    assert state.foreshadowing_debts[0].chapters_since_hint == 4
+
+
+def test_update_marks_resolved_debt():
+    from src.story.prophecy_analyst import AnalysisResult
+    state = make_state_with_debt(urgency_weight=0.5, chapters_since_hint=2)
+    result = AnalysisResult(
+        chapter_num=82,
+        chapter_summary="黛玉泪尽。",
+        detected_prophecy_ids=[],
+        resolved_debt_ids=["fd_001"],
+        new_thematic_keywords=[],
+        tone="悲恸",
+        ending_type="收束",
+    )
+    state.update_from_analysis(result)
+    assert state.foreshadowing_debts[0].status == "resolved"
+
+
+def test_update_keeps_recent_tone_streak_max_3():
+    from src.story.prophecy_analyst import AnalysisResult
+    state = StoryState()
+    for ch, tone in [(79, "热闹"), (80, "衰寂"), (81, "衰寂"), (82, "过渡")]:
+        state.update_from_analysis(AnalysisResult(
+            chapter_num=ch,
+            chapter_summary="",
+            detected_prophecy_ids=[],
+            resolved_debt_ids=[],
+            new_thematic_keywords=[],
+            tone=tone,
+            ending_type="悬念",
+        ))
+    assert len(state.narrative_pacing.recent_tone_streak) == 3
+    assert state.narrative_pacing.recent_tone_streak[-1].tone == "过渡"
+```
+
+- [ ] **Step 2: 运行测试，确认报 ImportError（预期失败）**
+
+```bash
+cd /path/to/worktree  # 在 worktree 目录下运行
+python3 -m pytest tests/story/test_story_state.py -v 2>&1 | head -15
+```
+
+Expected: `ModuleNotFoundError: No module named 'src.story.state_schema'`
+
+- [ ] **Step 3: 创建 `src/story/state_schema.py`**
+
+```python
+"""五层故事状态机的数据结构定义。"""
+from __future__ import annotations
+from dataclasses import dataclass, field
+from typing import List
+
+
+@dataclass
+class ProphecyAnchor:
+    """L1：判词意象层 — 跟踪十二钗判词的激活与兑现。"""
+    id: str
+    character: str
+    prophecy_fragment: str
+    keywords: List[str]
+    activated_at_chapter: int
+    urgency: str  # dormant | building | peak | resolved
+
+
+@dataclass
+class ToneRecord:
+    """L4 辅助：单章叙事基调记录。"""
+    chapter: int
+    tone: str  # 热闹 | 衰寂 | 忧虑 | 悲恸 | 过渡
+
+
+@dataclass
+class NarrativePacing:
+    """L4：叙事节奏层 — 防止连续多章基调相同。"""
+    recent_tone_streak: List[ToneRecord] = field(default_factory=list)
+    last_chapter_ending: str = "收束"   # 悬念 | 收束 | 过渡
+    suggested_next_tone: str = "平稳"
+    notes: str = ""
+
+
+@dataclass
+class CharacterStateEntry:
+    """L3：人物概况层 — 定性描述，不用数字。"""
+    health_trend: str = "平稳"    # 平稳 | 衰退 | 危急 | 已逝
+    emotional_center: str = "平静"
+    last_scene_chapter: int = 80
+    notes: str = ""
+
+
+@dataclass
+class ForeshadowingDebt:
+    """L5：伏笔债务层 — 追踪每条伏笔的压力与兑现进度。"""
+    id: str
+    description: str
+    source: str
+    keywords: List[str]
+    planted_at_chapter: int
+    last_hinted_chapter: int
+    chapters_since_hint: int
+    urgency_weight: float   # 0.0–1.0
+    status: str             # pending | hinting | resolved
+```
+
+- [ ] **Step 4: Commit schema**
+
+```bash
+git add src/story/state_schema.py tests/story/__init__.py tests/story/test_story_state.py
+git commit -m "feat: add state_schema.py with 5-layer dataclasses + failing tests"
+```
+
+---
+
+### Task 9b：story_state.py — StoryState 主类
+
+**Files:**
+- Create: `src/story/story_state.py`
+
+- [ ] **Step 1: 实现 `src/story/story_state.py`**
+
+```python
+"""StoryState：五层故事状态机，跨章节共享语境。"""
 from __future__ import annotations
 import json
 from dataclasses import dataclass, field, asdict
 from pathlib import Path
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Optional, TYPE_CHECKING
+
+from src.story.state_schema import (
+    ProphecyAnchor,
+    CharacterStateEntry,
+    ToneRecord,
+    NarrativePacing,
+    ForeshadowingDebt,
+)
+
+if TYPE_CHECKING:
+    from src.story.prophecy_analyst import AnalysisResult
+
+HINT_THRESHOLD = 8        # 超过此章数强制兑现
+HIGH_URGENCY_THRESHOLD = 0.7  # 权重高于此值强制兑现
 
 
 @dataclass
-class ChapterSummary:
-    chapter_num: int
-    summary: str          # 约200字摘要
-    key_events: List[str] # 2-3个关键事件
-    new_foreshadowings: List[str]  # 本章埋设的新伏笔
+class SceneHints:
+    """StoryState 给 StoryDirector 的语境摘要，直接映射到 SceneSpec 字段。"""
+    previous_summary: str
+    foreshadowing_must_payoff: List[str]
+    foreshadowing_should_plant: List[str]
+    suggested_emotional_tone: str
+    suggested_next_tone: str
 
 
 @dataclass
 class StoryState:
+    # ── 基础 ──
     current_chapter: int = 80
-    completed_chapters: List[ChapterSummary] = field(default_factory=list)
-    active_foreshadowings: List[str] = field(default_factory=list)
-    user_directions: List[str] = field(default_factory=list)  # 历史用户引导
 
-    _path: str = field(default="data/story_state.json", repr=False)
+    # ── L1：判词意象层 ──
+    active_prophecies: List[ProphecyAnchor] = field(default_factory=list)
+    current_thematic_keywords: List[str] = field(default_factory=list)
 
-    def save(self) -> None:
-        data = {
-            "current_chapter": self.current_chapter,
-            "completed_chapters": [asdict(c) for c in self.completed_chapters],
-            "active_foreshadowings": self.active_foreshadowings,
-            "user_directions": self.user_directions,
-        }
-        Path(self._path).write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+    # ── L2：剧情旗帜层 ──
+    milestones: Dict[str, bool] = field(default_factory=lambda: {
+        "宝玉丢玉": False,
+        "大观园抄检": False,
+        "黛玉焚稿": False,
+        "金玉良缘订立": False,
+        "贾府获罪抄家": False,
+        "宝玉出家": False,
+    })
+    chapter_summary: str = ""
+
+    # ── L3：人物概况层 ──
+    character_states: Dict[str, CharacterStateEntry] = field(default_factory=dict)
+
+    # ── L4：叙事节奏层 ──
+    narrative_pacing: NarrativePacing = field(default_factory=NarrativePacing)
+
+    # ── L5：伏笔债务层 ──
+    foreshadowing_debts: List[ForeshadowingDebt] = field(default_factory=list)
+
+    # ── 内部 ──
+    _state_dir: str = field(default="outputs/state", repr=False)
+
+    # ─────────────────────────────────────────────
+    # Pre-chapter：给 StoryDirector 提供语境
+    # ─────────────────────────────────────────────
+
+    def to_scene_hints(self, characters: List[str]) -> SceneHints:
+        """将当前状态转换为下一章 SceneSpec 所需的附加参数。"""
+        must_payoff = [
+            d.description
+            for d in self.foreshadowing_debts
+            if d.status == "pending" and (
+                d.urgency_weight >= HIGH_URGENCY_THRESHOLD
+                or d.chapters_since_hint >= HINT_THRESHOLD
+            )
+        ]
+        should_plant = list(self.current_thematic_keywords) + [
+            d.description
+            for d in self.foreshadowing_debts
+            if d.status == "pending"
+            and d.urgency_weight < HIGH_URGENCY_THRESHOLD
+            and d.chapters_since_hint < HINT_THRESHOLD
+        ]
+
+        emotional_tone = self._dominant_emotional_tone(characters)
+
+        return SceneHints(
+            previous_summary=self.chapter_summary,
+            foreshadowing_must_payoff=must_payoff,
+            foreshadowing_should_plant=should_plant,
+            suggested_emotional_tone=emotional_tone,
+            suggested_next_tone=self.narrative_pacing.suggested_next_tone,
+        )
+
+    def _dominant_emotional_tone(self, characters: List[str]) -> str:
+        centers = [
+            self.character_states[c].emotional_center
+            for c in characters
+            if c in self.character_states
+        ]
+        if not centers:
+            return "哀而不伤"
+        return "、".join(dict.fromkeys(centers))  # 去重保序
+
+    # ─────────────────────────────────────────────
+    # Post-chapter：接收 ProphecyAnalyst 结果并更新
+    # ─────────────────────────────────────────────
+
+    def update_from_analysis(self, result: "AnalysisResult") -> None:
+        """用 ProphecyAnalyst 的分析结果更新全部五层状态。"""
+        self.current_chapter = result.chapter_num
+        self.chapter_summary = f"第{result.chapter_num}回：{result.chapter_summary}"
+        self.current_thematic_keywords = result.new_thematic_keywords
+
+        # L1：升级命中的判词意象
+        for anchor in self.active_prophecies:
+            if anchor.id in result.detected_prophecy_ids:
+                _upgrade_urgency(anchor)
+
+        # L5：标记已兑现的债务，递增其余
+        for debt in self.foreshadowing_debts:
+            if debt.id in result.resolved_debt_ids:
+                debt.status = "resolved"
+            elif debt.status == "pending":
+                debt.chapters_since_hint += 1
+
+        # L4：更新节奏记录（保留最近3章）
+        pacing = self.narrative_pacing
+        pacing.recent_tone_streak.append(
+            ToneRecord(chapter=result.chapter_num, tone=result.tone)
+        )
+        if len(pacing.recent_tone_streak) > 3:
+            pacing.recent_tone_streak = pacing.recent_tone_streak[-3:]
+        pacing.last_chapter_ending = result.ending_type
+        pacing.suggested_next_tone = _compute_next_tone(pacing)
+
+    # ─────────────────────────────────────────────
+    # 持久化
+    # ─────────────────────────────────────────────
+
+    def save(self, chapter_num: int) -> Path:
+        """保存快照到 {_state_dir}/state_ch{chapter_num:03d}.json。"""
+        out_dir = Path(self._state_dir)
+        out_dir.mkdir(parents=True, exist_ok=True)
+        path = out_dir / f"state_ch{chapter_num:03d}.json"
+        path.write_text(
+            json.dumps(_to_dict(self), ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+        return path
 
     @classmethod
-    def load(cls, path: str = "data/story_state.json") -> "StoryState":
+    def load(cls, path: str) -> "StoryState":
+        """从指定路径加载快照。"""
         p = Path(path)
         if not p.exists():
-            return cls(_path=path)
-        data = json.loads(p.read_text(encoding="utf-8"))
-        state = cls(
-            current_chapter=data.get("current_chapter", 80),
-            active_foreshadowings=data.get("active_foreshadowings", []),
-            user_directions=data.get("user_directions", []),
-            _path=path,
-        )
-        for c in data.get("completed_chapters", []):
-            state.completed_chapters.append(ChapterSummary(**c))
-        return state
+            return cls()
+        return _from_dict(json.loads(p.read_text(encoding="utf-8")))
 
-    def get_previous_summary(self) -> str:
-        if not self.completed_chapters:
-            return ""
-        last = self.completed_chapters[-1]
-        return f"第{last.chapter_num}回：{last.summary}"
+    @classmethod
+    def load_latest(cls, state_dir: str = "outputs/state") -> "StoryState":
+        """加载 state_dir 中章节编号最大的快照；目录为空时返回默认初始状态。"""
+        snapshots = sorted(Path(state_dir).glob("state_ch*.json"))
+        if not snapshots:
+            return cls(_state_dir=state_dir)
+        latest = cls.load(str(snapshots[-1]))
+        latest._state_dir = state_dir
+        return latest
 
-    def advance(self, summary: ChapterSummary) -> None:
-        self.completed_chapters.append(summary)
-        self.current_chapter = summary.chapter_num
-        self.active_foreshadowings.extend(summary.new_foreshadowings)
-        self.save()
+
+# ──────────────────────────────────────────────────────
+# 内部辅助函数（模块私有）
+# ──────────────────────────────────────────────────────
+
+_URGENCY_ORDER = ["dormant", "building", "peak", "resolved"]
+
+
+def _upgrade_urgency(anchor: ProphecyAnchor) -> None:
+    try:
+        idx = _URGENCY_ORDER.index(anchor.urgency)
+        if idx < len(_URGENCY_ORDER) - 1:
+            anchor.urgency = _URGENCY_ORDER[idx + 1]
+    except ValueError:
+        pass
+
+
+def _compute_next_tone(pacing: NarrativePacing) -> str:
+    tones = [r.tone for r in pacing.recent_tone_streak]
+    if tones.count("衰寂") >= 2:
+        return "过渡"
+    if pacing.last_chapter_ending == "悬念":
+        return "收束"
+    return "平稳"
+
+
+def _to_dict(state: StoryState) -> dict:
+    return {
+        "current_chapter": state.current_chapter,
+        "active_prophecies": [asdict(p) for p in state.active_prophecies],
+        "current_thematic_keywords": state.current_thematic_keywords,
+        "milestones": state.milestones,
+        "chapter_summary": state.chapter_summary,
+        "character_states": {
+            name: asdict(cs) for name, cs in state.character_states.items()
+        },
+        "narrative_pacing": asdict(state.narrative_pacing),
+        "foreshadowing_debts": [asdict(d) for d in state.foreshadowing_debts],
+    }
+
+
+def _from_dict(data: dict) -> StoryState:
+    state = StoryState()
+    state.current_chapter = data.get("current_chapter", 80)
+    state.chapter_summary = data.get("chapter_summary", "")
+    state.current_thematic_keywords = data.get("current_thematic_keywords", [])
+    state.milestones = data.get("milestones", state.milestones)
+
+    state.active_prophecies = [
+        ProphecyAnchor(**p) for p in data.get("active_prophecies", [])
+    ]
+    state.character_states = {
+        name: CharacterStateEntry(**cs)
+        for name, cs in data.get("character_states", {}).items()
+    }
+    pacing_data = data.get("narrative_pacing", {})
+    streak = [ToneRecord(**r) for r in pacing_data.get("recent_tone_streak", [])]
+    state.narrative_pacing = NarrativePacing(
+        recent_tone_streak=streak,
+        last_chapter_ending=pacing_data.get("last_chapter_ending", "收束"),
+        suggested_next_tone=pacing_data.get("suggested_next_tone", "平稳"),
+        notes=pacing_data.get("notes", ""),
+    )
+    state.foreshadowing_debts = [
+        ForeshadowingDebt(**d) for d in data.get("foreshadowing_debts", [])
+    ]
+    return state
 ```
 
-- [ ] **Step 2: 运行快速验证**
+- [ ] **Step 2: 运行测试，确认全部通过**
 
 ```bash
-python3 -c "
-import sys; sys.path.insert(0, '.')
-from src.story.state import StoryState, ChapterSummary
-import tempfile, os
-
-with tempfile.NamedTemporaryFile(suffix='.json', delete=False) as f:
-    path = f.name
-
-state = StoryState(_path=path)
-state.advance(ChapterSummary(
-    chapter_num=81,
-    summary='宝黛秋日相遇，各怀心事。',
-    key_events=['宝玉探望黛玉', '黛玉作诗'],
-    new_foreshadowings=['黛玉病情加重'],
-))
-state2 = StoryState.load(path)
-print('current_chapter:', state2.current_chapter)
-print('summary:', state2.get_previous_summary())
-os.unlink(path)
-print('OK')
-"
+python3 -m pytest tests/story/test_story_state.py -v
 ```
 
-Expected: `current_chapter: 81` 和 `OK`
+Expected: 13 passed（含 `test_update_*` 3 个，此时 `AnalysisResult` 尚未实现，会报 ImportError — 先跳过那 3 个）
+
+实际上 `update_from_analysis` 的测试依赖 `AnalysisResult`，在 Task 9c 之前先只跑不依赖它的测试：
+
+```bash
+python3 -m pytest tests/story/test_story_state.py -v -k "not update"
+```
+
+Expected: 10 passed
 
 - [ ] **Step 3: Commit**
 
 ```bash
-git add src/story/state.py
-git commit -m "feat: add StoryState for cross-chapter continuity tracking"
+git add src/story/story_state.py
+git commit -m "feat: add StoryState with 5-layer schema, to_scene_hints, save/load/load_latest"
+```
+
+---
+
+### Task 9c：prophecy_analyst.py — 自动分析引擎
+
+**Files:**
+- Create: `src/story/prophecy_analyst.py`
+- Create: `tests/story/test_prophecy_analyst.py`
+- Create: `data/knowledge_base/prophecies/canonical.json`
+
+- [ ] **Step 1: 创建十二钗判词数据**
+
+`data/knowledge_base/prophecies/canonical.json`:
+
+```json
+[
+  {
+    "id": "pa_001",
+    "character": "林黛玉",
+    "prophecy_fragment": "玉带林中挂，金簪雪里埋（黛）",
+    "keywords": ["泪尽", "还债", "香消", "玉殒", "归去", "飘零", "泪"],
+    "initial_urgency": "dormant"
+  },
+  {
+    "id": "pa_002",
+    "character": "薛宝钗",
+    "prophecy_fragment": "金簪雪里埋（钗）",
+    "keywords": ["金玉", "良缘", "孤守", "独居", "孤寒"],
+    "initial_urgency": "dormant"
+  },
+  {
+    "id": "pa_003",
+    "character": "贾元春",
+    "prophecy_fragment": "二十年来辨是非，榴花开处照宫闱",
+    "keywords": ["宫中", "薨", "宫闱", "噩耗", "驾崩"],
+    "initial_urgency": "dormant"
+  },
+  {
+    "id": "pa_004",
+    "character": "贾探春",
+    "prophecy_fragment": "才自精明志自高，生于末世运偏消",
+    "keywords": ["远嫁", "和亲", "离去", "别离", "海外"],
+    "initial_urgency": "dormant"
+  },
+  {
+    "id": "pa_005",
+    "character": "王熙凤",
+    "prophecy_fragment": "一从二令三人木，哭向金陵事更哀",
+    "keywords": ["金陵", "失势", "休弃", "哀哭", "衰败"],
+    "initial_urgency": "dormant"
+  }
+]
+```
+
+- [ ] **Step 2: 写失败测试**
+
+`tests/story/test_prophecy_analyst.py`:
+
+```python
+import pytest
+from src.story.state_schema import ProphecyAnchor, ForeshadowingDebt
+from src.story.story_state import StoryState
+from src.story.prophecy_analyst import ProphecyAnalyst, AnalysisResult
+
+
+GOOD_TEXT = (
+    "且说那日黛玉独坐窗前，泪痕犹湿，手中诗稿已被泪水洇透，"
+    "自思此身飘零，不知归处。宝玉在外，怅惘难言，只觉世事难凭。"
+    "园中落叶纷纷，秋意愈深，竹影摇曳，药香隐约。"
+    "傍晚忽有急信传来，宝玉大惊，园中静气一变，且听下回分解。"
+)
+
+SAD_TEXT = "黛玉哭泣，泪尽而逝，香消玉殒，令人悲恸。"
+
+HAPPY_TEXT = "众人在花厅中饮宴，热闹非凡，笑语盈盈，一派欢腾。"
+
+
+def make_state_with_prophecy() -> StoryState:
+    state = StoryState()
+    state.active_prophecies = [
+        ProphecyAnchor(
+            id="pa_001",
+            character="林黛玉",
+            prophecy_fragment="玉带林中挂",
+            keywords=["泪尽", "香消", "飘零"],
+            activated_at_chapter=85,
+            urgency="building",
+        )
+    ]
+    state.foreshadowing_debts = [
+        ForeshadowingDebt(
+            id="fd_001",
+            description="黛玉泪尽而逝",
+            source="原著第5回",
+            keywords=["泪尽", "香消"],
+            planted_at_chapter=5,
+            last_hinted_chapter=80,
+            chapters_since_hint=2,
+            urgency_weight=0.4,
+            status="pending",
+        )
+    ]
+    return state
+
+
+def test_analyze_returns_analysis_result():
+    analyst = ProphecyAnalyst()
+    state = make_state_with_prophecy()
+    result = analyst.analyze(GOOD_TEXT, state, chapter_num=86, chapter_summary="宝黛秋日。")
+    assert isinstance(result, AnalysisResult)
+    assert result.chapter_num == 86
+
+
+def test_detect_prophecy_keywords_in_text():
+    analyst = ProphecyAnalyst()
+    state = make_state_with_prophecy()
+    result = analyst.analyze(SAD_TEXT, state, chapter_num=86, chapter_summary="黛玉逝。")
+    assert "pa_001" in result.detected_prophecy_ids
+
+
+def test_no_prophecy_hit_when_keywords_absent():
+    analyst = ProphecyAnalyst()
+    state = make_state_with_prophecy()
+    result = analyst.analyze(HAPPY_TEXT, state, chapter_num=86, chapter_summary="宴饮。")
+    assert "pa_001" not in result.detected_prophecy_ids
+
+
+def test_detect_resolved_debt_when_keywords_present():
+    analyst = ProphecyAnalyst()
+    state = make_state_with_prophecy()
+    result = analyst.analyze(SAD_TEXT, state, chapter_num=86, chapter_summary="黛玉逝。")
+    assert "fd_001" in result.resolved_debt_ids
+
+
+def test_tone_detection_sad_text():
+    analyst = ProphecyAnalyst()
+    state = StoryState()
+    result = analyst.analyze(SAD_TEXT, state, chapter_num=86, chapter_summary="")
+    assert result.tone in ("衰寂", "悲恸")
+
+
+def test_tone_detection_happy_text():
+    analyst = ProphecyAnalyst()
+    state = StoryState()
+    result = analyst.analyze(HAPPY_TEXT, state, chapter_num=86, chapter_summary="")
+    assert result.tone == "热闹"
+
+
+def test_ending_type_suspense_detected():
+    analyst = ProphecyAnalyst()
+    state = StoryState()
+    result = analyst.analyze(GOOD_TEXT, state, chapter_num=86, chapter_summary="")
+    assert result.ending_type == "悬念"
+
+
+def test_thematic_keywords_extracted():
+    analyst = ProphecyAnalyst()
+    state = StoryState()
+    result = analyst.analyze(GOOD_TEXT, state, chapter_num=86, chapter_summary="")
+    assert len(result.new_thematic_keywords) >= 1
+
+
+def test_full_pipeline_update_from_analysis():
+    """analyze 结果能正确更新 StoryState。"""
+    analyst = ProphecyAnalyst()
+    state = make_state_with_prophecy()
+    result = analyst.analyze(SAD_TEXT, state, chapter_num=86, chapter_summary="黛玉逝。")
+    state.update_from_analysis(result)
+    # 判词意象应升级
+    assert state.active_prophecies[0].urgency in ("peak", "resolved")
+    # 债务应标记 resolved
+    assert state.foreshadowing_debts[0].status == "resolved"
+    # 章节应更新
+    assert state.current_chapter == 86
+```
+
+- [ ] **Step 3: 运行测试，确认失败**
+
+```bash
+python3 -m pytest tests/story/test_prophecy_analyst.py -v 2>&1 | head -10
+```
+
+Expected: `ModuleNotFoundError: No module named 'src.story.prophecy_analyst'`
+
+- [ ] **Step 4: 实现 `src/story/prophecy_analyst.py`**
+
+```python
+"""ProphecyAnalyst：章节生成后自动分析文本，更新 StoryState 的五层状态。"""
+from __future__ import annotations
+import re
+from dataclasses import dataclass, field
+from typing import List
+
+from src.story.story_state import StoryState
+
+# ── 基调关键词词表 ─────────────────────────────────────────────────────────
+
+_TONE_PATTERNS = {
+    "悲恸": ["泣", "哭", "痛哭", "悲恸", "号啕", "垂泪", "泪如雨"],
+    "衰寂": ["凋零", "凄清", "寂寥", "残荷", "落叶", "秋风", "衰", "飘零", "萧瑟"],
+    "忧虑": ["忧虑", "不安", "心惊", "愁", "忧", "惶", "惴"],
+    "热闹": ["欢笑", "热闹", "笑语", "饮宴", "欢腾", "嬉笑", "喜"],
+    "过渡": ["平静", "平常", "如常"],
+}
+
+_THEMATIC_SOURCES = ["秋", "冬", "哭", "笑", "泪", "雪", "残荷", "竹", "药", "风", "月", "花"]
+
+_SUSPENSE_ENDINGS = re.compile(
+    r"(且听下回分解|忽[有闻见]|急报|消息传来|不知后事如何|且慢|究竟如何|变故)"
+)
+_CLOSURE_ENDINGS = re.compile(r"(各自散去|方才罢了|一时无话|遂各安歇|此事方了|就此别过)")
+
+
+@dataclass
+class AnalysisResult:
+    chapter_num: int
+    chapter_summary: str
+    detected_prophecy_ids: List[str]
+    resolved_debt_ids: List[str]
+    new_thematic_keywords: List[str]
+    tone: str        # 热闹 | 衰寂 | 忧虑 | 悲恸 | 过渡
+    ending_type: str  # 悬念 | 收束 | 过渡
+
+
+class ProphecyAnalyst:
+    """无状态的分析器，接收文本和当前 StoryState，输出 AnalysisResult。"""
+
+    def analyze(
+        self,
+        text: str,
+        state: StoryState,
+        chapter_num: int,
+        chapter_summary: str,
+    ) -> AnalysisResult:
+        return AnalysisResult(
+            chapter_num=chapter_num,
+            chapter_summary=chapter_summary,
+            detected_prophecy_ids=self._detect_prophecy_hits(text, state),
+            resolved_debt_ids=self._detect_resolved_debts(text, state),
+            new_thematic_keywords=self._extract_thematic_keywords(text),
+            tone=self._detect_tone(text),
+            ending_type=self._detect_ending_type(text),
+        )
+
+    def _detect_prophecy_hits(self, text: str, state: StoryState) -> List[str]:
+        return [
+            anchor.id
+            for anchor in state.active_prophecies
+            if anchor.urgency != "resolved"
+            and any(kw in text for kw in anchor.keywords)
+        ]
+
+    def _detect_resolved_debts(self, text: str, state: StoryState) -> List[str]:
+        return [
+            debt.id
+            for debt in state.foreshadowing_debts
+            if debt.status == "pending"
+            and any(kw in text for kw in debt.keywords)
+        ]
+
+    def _extract_thematic_keywords(self, text: str) -> List[str]:
+        return [kw for kw in _THEMATIC_SOURCES if kw in text]
+
+    def _detect_tone(self, text: str) -> str:
+        scores = {tone: 0 for tone in _TONE_PATTERNS}
+        for tone, patterns in _TONE_PATTERNS.items():
+            for pat in patterns:
+                scores[tone] += text.count(pat)
+        best = max(scores, key=lambda t: scores[t])
+        return best if scores[best] > 0 else "过渡"
+
+    def _detect_ending_type(self, text: str) -> str:
+        # 取最后200字判断结尾类型
+        tail = text[-200:]
+        if _SUSPENSE_ENDINGS.search(tail):
+            return "悬念"
+        if _CLOSURE_ENDINGS.search(tail):
+            return "收束"
+        return "过渡"
+```
+
+- [ ] **Step 5: 运行全部 story 测试，确认通过**
+
+```bash
+python3 -m pytest tests/story/ -v
+```
+
+Expected: 22 passed（含 `test_story_state.py` 13 个 + `test_prophecy_analyst.py` 9 个）
+
+- [ ] **Step 6: 运行 `test_story_state.py` 中之前跳过的 `update_*` 测试**
+
+```bash
+python3 -m pytest tests/story/test_story_state.py -v -k "update"
+```
+
+Expected: 3 passed
+
+- [ ] **Step 7: Commit**
+
+```bash
+git add src/story/prophecy_analyst.py \
+        src/story/story_state.py \
+        data/knowledge_base/prophecies/canonical.json \
+        tests/story/test_prophecy_analyst.py
+git commit -m "feat: add ProphecyAnalyst + canonical prophecy data, complete Task 9 story layer"
 ```
 
 ---
