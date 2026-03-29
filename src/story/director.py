@@ -45,8 +45,6 @@ class StoryDirector:
         tasks = self.foreshadowing_kb.get_chapter_tasks(chapter_num)
 
         emotional_tone = scene_hints.suggested_emotional_tone or defaults["emotional_tone"]
-        if emotional_tone == "哀而不伤" and defaults["emotional_tone"]:
-            emotional_tone = defaults["emotional_tone"]
 
         should_plant = _merge_unique(
             scene_hints.foreshadowing_should_plant,
