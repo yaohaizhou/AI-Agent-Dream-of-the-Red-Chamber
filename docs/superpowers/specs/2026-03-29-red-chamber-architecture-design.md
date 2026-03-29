@@ -57,7 +57,7 @@
                        │ 原始文本
 ┌──────────────────────▼──────────────────────────────┐
 │                  评判层                               │
-│  LiteraryJudge：对照原著RAG片段打分，不过关自动重写   │
+│  LiteraryJudge：对照原著RAG片段打分，输出评语与改写建议 │
 └─────────────────────────────────────────────────────┘
 ```
 
@@ -247,9 +247,10 @@ foreshadowing_kb.get_chapter_tasks(chapter_num=81) → {
 | 人物声音准确度 | 检测是否违反各人物的禁用词和惯用句式约束 | 35% |
 | 伏笔完成度 | 检查 must_payoff 伏笔是否在文中出现 | 25% |
 
-**自动重写机制**：
-- 综合分 < 7.0：带评语重新生成（最多3次）
-- 3次仍未达标：保存最高分版本，标记为"需人工审阅"
+**Phase 1 交付边界**：
+- `LiteraryJudge` 负责输出分项分数、总分、通过/不通过判定、评语与改写建议
+- 不在 Phase 1 内执行自动重写循环
+- 自动重写保留到后续阶段，在评判结果稳定后再接入 `ContentWriter`
 
 ---
 
@@ -318,7 +319,7 @@ model = SentenceTransformer("BAAI/bge-m3", device="mps")
 1. 建立风格层知识库（`knowledge/builder.py` + `knowledge/style_kb.py`）
 2. 提取人物语言特征（`knowledge/character_kb.py`）
 3. 实现 ContextAssembler（拼装新 prompt 结构）
-4. 实现 LiteraryJudge（RAG 对照评分 + 自动重写）
+4. 实现 LiteraryJudge（RAG 对照评分 + 改写建议）
 5. 改造 ContentWriter 使用新 prompt
 6. 端到端跑通第81回
 

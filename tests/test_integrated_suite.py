@@ -115,23 +115,41 @@ class TestCharacterConsistency:
         宝玉对黛玉道：'好妹妹，你今日诗做得如何？'
         黛玉笑道：'不过是随感而发，有什么好不好。'
         """
-        # 使用同步方法测试
-        result = checker._check_consistency_sync(
-            content, 
+        # 由于 _check_consistency_sync 不存在，改为在事件循环中运行异步方法
+        import asyncio
+        result = asyncio.run(checker.check_consistency(
+            content,
             ['宝玉', '黛玉'],
             threshold=0.5
-        )
+        ))
         assert 'overall_score' in result
         assert 'individual_results' in result
 
 
 class TestQualityCheckerIntegration:
     """测试质量检查器集成"""
-    
+
     @pytest.mark.asyncio
     async def test_evaluation_pipeline(self):
         # 这里可以添加集成测试
         pass
+
+
+@pytest.mark.asyncio
+async def test_pytest_asyncio_configuration_is_active():
+    """确认pytest已配置为可直接运行async测试。"""
+    await dummy_async_work()
+    assert True
+
+
+def test_pytest_asyncio_marker_is_registered(pytestconfig):
+    """确认pytest已注册asyncio标记，避免UnknownMarkWarning。"""
+    markers = pytestconfig.getini("markers")
+    assert any(marker.split(":", 1)[0].strip() == "asyncio" for marker in markers)
+
+
+async def dummy_async_work():
+    return None
 
 
 class TestScorerConsistency:

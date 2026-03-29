@@ -1,0 +1,47 @@
+[
+  {
+    "id": "f001",
+    "source_chapter": 5,
+    "hint_text": "玉带林中挂，金簪雪里埋",
+    "character": "林黛玉",
+    "expected_payoff_range": [95, 115],
+    "payoff_keywords": ["黛玉", "生死", "离开", "假死", "病逝"],
+    "status": "pending"
+  },
+  {
+    "id": "f002",
+    "source_chapter": 5,
+    "hint_text": "二十年来辨是非，榴花开处照宫闱",
+    "character": "元春",
+    "expected_payoff_range": [83, 92],
+    "payoff_keywords": ["元春", "宫中", "薨", "宫闱"],
+    "status": "pending"
+  },
+  {
+    "id": "f003",
+    "source_chapter": 5,
+    "hint_text": "才自精明志自高，生于末世运偏消",
+    "character": "贾探春",
+    "expected_payoff_range": [100, 112],
+    "payoff_keywords": ["探春", "远嫁", "离去", "和亲"],
+    "status": "pending"
+  },
+  {
+    "id": "f004",
+    "source_chapter": 5,
+    "hint_text": "一从二令三人木，哭向金陵事更哀",
+    "character": "王熙凤",
+    "expected_payoff_range": [95, 108],
+    "payoff_keywords": ["凤姐", "失势", "病重", "金陵"],
+    "status": "pending"
+  },
+  {
+    "id": "f005",
+    "source_chapter": 13,
+    "hint_text": "三春过后诸芳尽，各自须寻各自门",
+    "character": "秦可卿",
+    "expected_payoff_range": [81, 100],
+    "payoff_keywords": ["贾府", "衰败", "诸芳", "离散"],
+    "status": "pending"
+  }
+]

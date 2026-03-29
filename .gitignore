@@ -164,6 +164,18 @@ cython_debug/
 
 # 忽略AI续写项目生成的缓存和输出文件
 /output/cache/
+/output/red_chamber_continuation_*/
+/data/knowledge_base.db
+/data/knowledge_base/style.building/
+/data/knowledge_base/style.building.*/
+/data/knowledge_base/style_verify.building.*/
+/data/knowledge_base/style_verify_small.building.*/
+/data/knowledge_base/style_min_repro/
+/data/knowledge_base/style_repro_full/
+/data/knowledge_base/style/
+/docs/2026-03-29_PROGRESS_NOTE.md
+/docs/PROGRESS_NOTE_2026-03-29.md
+/docs/STYLE_KB_PROGRESS_2026-03-29.md
 
 # Git worktrees
 .worktrees/

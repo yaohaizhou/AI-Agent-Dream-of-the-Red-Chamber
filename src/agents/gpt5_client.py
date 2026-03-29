@@ -207,40 +207,39 @@ class GPT5Client:
 class MockGPT5Client:
     """模拟GPT-5客户端，用于测试"""
 
-    async def chat(self, **kwargs):
-        """模拟聊天接口"""
-        await asyncio.sleep(1)  # 模拟API延迟
+    def __init__(self):
+        self.chat = self._ChatAPI()
 
-        class MockResponse:
-            def __init__(self):
-                self.choices = [MockChoice()]
-                self.usage = MockUsage()
-                self.model = f"{self.settings.model_name}-mock"
+    class _ChatAPI:
+        def __init__(self):
+            self.completions = MockGPT5Client._CompletionsAPI()
 
-        class MockChoice:
-            def __init__(self):
-                self.message = MockMessage()
-                self.finish_reason = "stop"
+    class _CompletionsAPI:
+        async def create(self, **kwargs):
+            await asyncio.sleep(0.01)
 
-        class MockMessage:
-            def __init__(self):
-                self.content = "这是模拟生成的古典文学内容。古风雅致，韵味悠长..."
+            class MockMessage:
+                def __init__(self):
+                    self.content = "这是模拟生成的古典文学内容。古风雅致，韵味悠长..."
 
-        class MockUsage:
-            def __init__(self):
-                self.prompt_tokens = 1000
-                self.completion_tokens = 500
-                self.total_tokens = 1500
+            class MockChoice:
+                def __init__(self):
+                    self.message = MockMessage()
+                    self.finish_reason = "stop"
 
-        return MockResponse()
+            class MockUsage:
+                def __init__(self):
+                    self.prompt_tokens = 1000
+                    self.completion_tokens = 500
+                    self.total_tokens = 1500
 
-    async def completions(self):
-        """兼容OpenAI API接口"""
-        return self
+            class MockResponse:
+                def __init__(self):
+                    self.choices = [MockChoice()]
+                    self.usage = MockUsage()
+                    self.model = "gpt-5-mock"
 
-    async def create(self, **kwargs):
-        """创建完成的模拟方法"""
-        return await self.chat(**kwargs)
+            return MockResponse()
 
 
 # 全局客户端实例

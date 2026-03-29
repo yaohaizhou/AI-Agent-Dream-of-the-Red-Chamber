@@ -1,0 +1,37 @@
+[
+  {
+    "id": "pa_001",
+    "character": "林黛玉",
+    "prophecy_fragment": "玉带林中挂，金簪雪里埋（黛）",
+    "keywords": ["泪尽", "还债", "香消", "玉殒", "归去", "飘零", "泪"],
+    "initial_urgency": "dormant"
+  },
+  {
+    "id": "pa_002",
+    "character": "薛宝钗",
+    "prophecy_fragment": "金簪雪里埋（钗）",
+    "keywords": ["金玉", "良缘", "孤守", "独居", "孤寒"],
+    "initial_urgency": "dormant"
+  },
+  {
+    "id": "pa_003",
+    "character": "贾元春",
+    "prophecy_fragment": "二十年来辨是非，榴花开处照宫闱",
+    "keywords": ["宫中", "薨", "宫闱", "噩耗", "驾崩"],
+    "initial_urgency": "dormant"
+  },
+  {
+    "id": "pa_004",
+    "character": "贾探春",
+    "prophecy_fragment": "才自精明志自高，生于末世运偏消",
+    "keywords": ["远嫁", "和亲", "离去", "别离", "海外"],
+    "initial_urgency": "dormant"
+  },
+  {
+    "id": "pa_005",
+    "character": "王熙凤",
+    "prophecy_fragment": "一从二令三人木，哭向金陵事更哀",
+    "keywords": ["金陵", "失势", "休弃", "哀哭", "衰败"],
+    "initial_urgency": "dormant"
+  }
+]
