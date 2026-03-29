@@ -1,6 +1,7 @@
 from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import List, Optional
+import hashlib
 import torch
 import chromadb
 
@@ -41,7 +42,7 @@ class StyleKnowledgeBase:
         texts = [c.text for c in chunks]
         embeddings = self.model.encode(texts, normalize_embeddings=True).tolist()
         ids = [
-            f"ch{c.chapter_num}_{abs(hash(c.text)) % 10_000_000}"
+            f"ch{c.chapter_num}_{hashlib.sha256(c.text.encode()).hexdigest()[:12]}"
             for c in chunks
         ]
         metadatas = [
