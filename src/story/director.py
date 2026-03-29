@@ -42,28 +42,29 @@ class StoryDirector:
             },
         )
 
-        scene_hints = self.state.to_scene_hints(defaults["characters"])
+        characters = list(defaults["characters"])
+        scene_hints = self.state.to_scene_hints(characters)
         tasks = self.foreshadowing_kb.get_chapter_tasks(
             chapter_num,
             active_dynamic=scene_hints.foreshadowing_should_plant,
         )
 
-        emotional_tone = defaults["emotional_tone"]
-        if scene_hints.suggested_emotional_tone and scene_hints.suggested_emotional_tone != "哀而不伤":
-            emotional_tone = scene_hints.suggested_emotional_tone
+        emotional_tone = scene_hints.suggested_emotional_tone or defaults["emotional_tone"]
         if scene_hints.suggested_next_tone and scene_hints.suggested_next_tone not in emotional_tone:
             emotional_tone = f"{emotional_tone}，{scene_hints.suggested_next_tone}"
 
-        foreshadowing_must_payoff = list(dict.fromkeys(
-            list(scene_hints.foreshadowing_must_payoff) + list(tasks.must_payoff)
-        ))
-        foreshadowing_should_plant = list(dict.fromkeys(
-            list(tasks.active_threads) + list(tasks.should_plant)
-        ))
+        foreshadowing_must_payoff = _merge_unique(
+            scene_hints.foreshadowing_must_payoff,
+            tasks.must_payoff,
+        )
+        foreshadowing_should_plant = _merge_unique(
+            tasks.active_threads,
+            tasks.should_plant,
+        )
 
         return SceneSpec(
             chapter_num=chapter_num,
-            characters=list(defaults["characters"]),
+            characters=characters,
             scene_description=defaults["scene_description"],
             emotional_tone=emotional_tone,
             user_hint=user_hint,
@@ -71,3 +72,12 @@ class StoryDirector:
             foreshadowing_must_payoff=foreshadowing_must_payoff,
             foreshadowing_should_plant=foreshadowing_should_plant,
         )
+
+
+def _merge_unique(*groups: list[str]) -> list[str]:
+    merged: list[str] = []
+    for group in groups:
+        for item in group:
+            if item and item not in merged:
+                merged.append(item)
+    return merged
