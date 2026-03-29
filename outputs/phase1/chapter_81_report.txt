@@ -1,0 +1,8 @@
+score=7.81
+style_score=8.66
+voice_score=8.5
+foreshadowing_score=9.0
+dialogue_balance_score=3.0
+theme_focus_score=10.0
+passed=False
+feedback=需要改进：对话偏密，叙述承托不足，须压缩连续对白并增补景物、动作、心绪描写
