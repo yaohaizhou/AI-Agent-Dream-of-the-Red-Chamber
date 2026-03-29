@@ -73,6 +73,38 @@ def test_to_scene_hints_thematic_keywords_in_should_plant():
         assert kw in hints.foreshadowing_should_plant
 
 
+def test_to_scene_hints_includes_active_user_guidance():
+    state = StoryState()
+    state.record_user_guidance(
+        chapter_num=81,
+        original_hint="让宝玉收到一封匿名信",
+        normalized_hint="宝玉收到匿名信",
+        guidance_type="event",
+        strength="strong",
+        conflict_status="compatible",
+    )
+
+    hints = state.to_scene_hints(characters=["贾宝玉"])
+
+    assert "宝玉收到匿名信" in hints.foreshadowing_must_payoff
+
+
+def test_to_scene_hints_uses_medium_guidance_as_should_plant():
+    state = StoryState()
+    state.record_user_guidance(
+        chapter_num=81,
+        original_hint="让宝玉渐渐起出家之念",
+        normalized_hint="宝玉渐起出家之念",
+        guidance_type="direction",
+        strength="medium",
+        conflict_status="compatible",
+    )
+
+    hints = state.to_scene_hints(characters=["贾宝玉"])
+
+    assert "宝玉渐起出家之念" in hints.foreshadowing_should_plant
+
+
 def test_to_scene_hints_suggests_emotional_tone_from_character():
     state = StoryState()
     state.character_states["林黛玉"] = CharacterStateEntry(
@@ -113,6 +145,24 @@ def test_load_roundtrip_preserves_fields(tmp_path):
     assert loaded.chapter_summary == "第81回摘要。"
     assert loaded.current_thematic_keywords == ["秋", "残荷"]
     assert loaded.character_states["贾宝玉"].emotional_center == "怅惘"
+
+
+def test_story_state_save_and_load_preserve_user_guidance(tmp_path):
+    state = StoryState(_state_dir=str(tmp_path))
+    state.record_user_guidance(
+        chapter_num=81,
+        original_hint="让黛玉更加疑心",
+        normalized_hint="黛玉疑心更深",
+        guidance_type="emotion",
+        strength="light",
+        conflict_status="compatible",
+    )
+
+    saved = state.save(81)
+    loaded = StoryState.load(str(saved))
+
+    assert loaded.active_user_guidance[0].normalized_hint == "黛玉疑心更深"
+    assert loaded.active_user_guidance[0].strength == "light"
 
 
 def test_load_latest_returns_newest_snapshot(tmp_path):

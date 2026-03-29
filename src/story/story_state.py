@@ -11,6 +11,7 @@ from src.story.state_schema import (
     ToneRecord,
     NarrativePacing,
     ForeshadowingDebt,
+    UserGuidance,
 )
 
 if TYPE_CHECKING:
@@ -58,6 +59,7 @@ class StoryState:
 
     # ── L5：伏笔债务层 ──
     foreshadowing_debts: List[ForeshadowingDebt] = field(default_factory=list)
+    active_user_guidance: List[UserGuidance] = field(default_factory=list)
 
     # ── 内部 ──
     _state_dir: str = field(default="outputs/state", repr=False)
@@ -65,6 +67,27 @@ class StoryState:
     # ─────────────────────────────────────────────
     # Pre-chapter：给 StoryDirector 提供语境
     # ─────────────────────────────────────────────
+
+    def record_user_guidance(
+        self,
+        chapter_num: int,
+        original_hint: str,
+        normalized_hint: str,
+        guidance_type: str,
+        strength: str,
+        conflict_status: str,
+    ) -> None:
+        self.active_user_guidance.append(
+            UserGuidance(
+                chapter_num=chapter_num,
+                original_hint=original_hint,
+                normalized_hint=normalized_hint,
+                guidance_type=guidance_type,
+                strength=strength,
+                conflict_status=conflict_status,
+            )
+        )
+        self.active_user_guidance = self.active_user_guidance[-5:]
 
     def to_scene_hints(self, characters: List[str]) -> SceneHints:
         """将当前状态转换为下一章 SceneSpec 所需的附加参数。"""
@@ -84,12 +107,18 @@ class StoryState:
             and d.chapters_since_hint < HINT_THRESHOLD
         ]
 
+        for guidance in self.active_user_guidance:
+            if guidance.strength == "strong":
+                must_payoff.append(guidance.normalized_hint)
+            else:
+                should_plant.append(guidance.normalized_hint)
+
         emotional_tone = self._dominant_emotional_tone(characters)
 
         return SceneHints(
             previous_summary=self.chapter_summary,
-            foreshadowing_must_payoff=must_payoff,
-            foreshadowing_should_plant=should_plant,
+            foreshadowing_must_payoff=list(dict.fromkeys(must_payoff)),
+            foreshadowing_should_plant=list(dict.fromkeys(should_plant)),
             suggested_emotional_tone=emotional_tone,
             suggested_next_tone=self.narrative_pacing.suggested_next_tone,
         )
@@ -207,6 +236,7 @@ def _to_dict(state: StoryState) -> dict:
         },
         "narrative_pacing": asdict(state.narrative_pacing),
         "foreshadowing_debts": [asdict(d) for d in state.foreshadowing_debts],
+        "active_user_guidance": [asdict(item) for item in state.active_user_guidance],
     }
 
 
@@ -234,5 +264,8 @@ def _from_dict(data: dict) -> StoryState:
     )
     state.foreshadowing_debts = [
         ForeshadowingDebt(**d) for d in data.get("foreshadowing_debts", [])
+    ]
+    state.active_user_guidance = [
+        UserGuidance(**item) for item in data.get("active_user_guidance", [])
     ]
     return state

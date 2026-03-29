@@ -7,6 +7,10 @@ from src.generation.context_assembler import SceneSpec
 from src.knowledge.foreshadowing_kb import ForeshadowingKnowledgeBase
 from src.story.story_state import StoryState
 
+_CONFLICT_MARKERS = {
+    "元春": ["病势沉重", "不祥消息", "宫中已有不祥消息"],
+}
+
 # 每回默认场景配置：可按需扩展
 _DEFAULT_SCENES = {
     81: {
@@ -44,12 +48,25 @@ class StoryDirector:
 
         characters = list(defaults["characters"])
         scene_hints = self.state.to_scene_hints(characters)
+        analyzed_hint = _analyze_user_hint(user_hint, self.state.chapter_summary, chapter_num)
+        if analyzed_hint is not None:
+            self.state.record_user_guidance(
+                chapter_num=chapter_num,
+                original_hint=user_hint or "",
+                normalized_hint=analyzed_hint["normalized_hint"],
+                guidance_type=analyzed_hint["guidance_type"],
+                strength=analyzed_hint["strength"],
+                conflict_status=analyzed_hint["conflict_status"],
+            )
+            scene_hints = self.state.to_scene_hints(characters)
         tasks = self.foreshadowing_kb.get_chapter_tasks(
             chapter_num,
             active_dynamic=scene_hints.foreshadowing_should_plant,
         )
 
         emotional_tone = scene_hints.suggested_emotional_tone or defaults["emotional_tone"]
+        if analyzed_hint and analyzed_hint["guidance_type"] == "emotion":
+            emotional_tone = _merge_tone(emotional_tone, analyzed_hint["normalized_hint"])
         if scene_hints.suggested_next_tone and scene_hints.suggested_next_tone not in emotional_tone:
             emotional_tone = f"{emotional_tone}，{scene_hints.suggested_next_tone}"
 
@@ -67,11 +84,92 @@ class StoryDirector:
             characters=characters,
             scene_description=defaults["scene_description"],
             emotional_tone=emotional_tone,
-            user_hint=user_hint,
+            user_hint=analyzed_hint["display_hint"] if analyzed_hint else user_hint,
             previous_summary=scene_hints.previous_summary,
             foreshadowing_must_payoff=foreshadowing_must_payoff,
             foreshadowing_should_plant=foreshadowing_should_plant,
         )
+
+
+def _analyze_user_hint(user_hint: Optional[str], chapter_summary: str, chapter_num: int) -> Optional[dict[str, str]]:
+    if not user_hint:
+        return None
+
+    normalized = user_hint.strip()
+    guidance_type = _classify_guidance_type(normalized)
+    strength = _classify_strength(normalized, guidance_type, chapter_num)
+    conflict_status = "compatible"
+    display_hint = _normalize_hint(normalized)
+    guidance_text = display_hint
+
+    if _conflicts_with_summary(normalized, chapter_summary):
+        conflict_status = "softened"
+        display_hint = "谨守现有情势，元春喜讯不可骤然落实"
+        guidance_text = "元春喜讯暂不可骤然落实"
+        strength = "light"
+
+    return {
+        "normalized_hint": guidance_text,
+        "guidance_type": guidance_type,
+        "strength": strength,
+        "conflict_status": conflict_status,
+        "display_hint": display_hint,
+    }
+
+
+def _classify_guidance_type(user_hint: str) -> str:
+    if any(word in user_hint for word in ["气氛", "更凄", "更冷", "凄冷", "凄清", "悲凉", "清冷"]):
+        return "emotion"
+    if any(word in user_hint for word in ["最终", "渐渐", "渐起", "日后", "往后"]):
+        return "direction"
+    return "event"
+
+
+def _classify_strength(user_hint: str, guidance_type: str, chapter_num: int) -> str:
+    if guidance_type == "emotion":
+        return "light"
+    if guidance_type == "direction":
+        return "medium"
+    if f"第{chapter_num}回" in user_hint or "这一回" in user_hint or "本回" in user_hint:
+        return "strong"
+    return "medium"
+
+
+def _normalize_hint(user_hint: str) -> str:
+    hint = user_hint.strip()
+    replacements = [
+        "让",
+        "在第81回",
+        "在第82回",
+        "在第83回",
+        "这一回",
+        "本回",
+        "第81回",
+        "第82回",
+        "第83回",
+        "些",
+    ]
+    for text in replacements:
+        hint = hint.replace(text, "")
+    hint = hint.replace("收到一封", "收到")
+    hint = hint.replace("收到一则", "收到")
+    hint = hint.replace("收到一张", "收到")
+    hint = hint.replace("匿名信件", "匿名信")
+    return hint.strip(" ，。")
+
+
+def _conflicts_with_summary(user_hint: str, chapter_summary: str) -> bool:
+    for character, markers in _CONFLICT_MARKERS.items():
+        if character in user_hint and "大喜回府省亲" in user_hint:
+            if any(marker in chapter_summary for marker in markers):
+                return True
+    return False
+
+
+def _merge_tone(base_tone: str, hint_tone: str) -> str:
+    if hint_tone in base_tone:
+        return base_tone
+    return f"{base_tone}，{hint_tone}"
 
 
 def _merge_unique(*groups: list[str]) -> list[str]:

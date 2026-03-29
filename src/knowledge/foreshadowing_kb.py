@@ -23,6 +23,7 @@ class ForeshadowingKnowledgeBase:
         path = Path(canonical_path)
         if not path.is_absolute():
             path = Path(__file__).resolve().parents[2] / path
+        self._canonical_path = path
         if path.exists():
             self.canonical = json.loads(path.read_text(encoding="utf-8"))
 
@@ -32,22 +33,24 @@ class ForeshadowingKnowledgeBase:
         active_dynamic: Optional[List[str]] = None,
     ) -> ForeshadowingTask:
         must_payoff: List[str] = []
+        should_plant: List[str] = []
         active_threads: List[str] = []
 
         for foreshadowing in self.canonical:
             if foreshadowing["status"] == "pending":
                 lo, hi = foreshadowing["expected_payoff_range"]
                 hint = foreshadowing["hint_text"]
+                character = foreshadowing["character"]
                 if lo <= chapter_num <= hi:
-                    must_payoff.append(
-                        f'{foreshadowing["character"]}的伏笔："{hint}"'
-                    )
+                    must_payoff.append(f'{character}的伏笔："{hint}"')
                 elif chapter_num < lo:
                     active_threads.append(hint)
+                    if lo - chapter_num <= 12:
+                        should_plant.append(f'{character}的伏笔待续："{hint}"')
 
         return ForeshadowingTask(
             must_payoff=must_payoff,
-            should_plant=[],
+            should_plant=should_plant,
             active_threads=active_threads + (active_dynamic or []),
         )
 
@@ -55,4 +58,11 @@ class ForeshadowingKnowledgeBase:
         for foreshadowing in self.canonical:
             if foreshadowing["id"] == foreshadowing_id:
                 foreshadowing["status"] = "resolved"
+                self._save()
                 break
+
+    def _save(self) -> None:
+        self._canonical_path.write_text(
+            json.dumps(self.canonical, ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )

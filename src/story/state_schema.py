@@ -52,3 +52,14 @@ class ForeshadowingDebt:
     chapters_since_hint: int
     urgency_weight: float   # 0.0–1.0
     status: str             # pending | hinting | resolved
+
+
+@dataclass
+class UserGuidance:
+    """用户引导：由 StoryDirector 分析后写回，影响后续章节。"""
+    chapter_num: int
+    original_hint: str
+    normalized_hint: str
+    guidance_type: str      # event | direction | emotion | foreshadowing
+    strength: str           # strong | medium | light
+    conflict_status: str    # compatible | softened
