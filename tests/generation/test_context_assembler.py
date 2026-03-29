@@ -107,3 +107,58 @@ def test_user_hint_appears_in_prompt(tmp_path, monkeypatch):
     )
     _, user_prompt = assembler.assemble(spec)
     assert "神秘信件" in user_prompt
+
+
+def test_user_prompt_contains_chapter_theme_block(tmp_path, monkeypatch):
+    style_kb = make_kb(tmp_path, monkeypatch)
+    char_kb = CharacterKnowledgeBase()
+    assembler = ContextAssembler(style_kb, char_kb)
+
+    spec = SceneSpec(
+        chapter_num=81,
+        characters=["贾宝玉", "林黛玉"],
+        scene_description="秋日宝黛在园中对话，感时伤怀",
+        emotional_tone="哀愁",
+    )
+    _, user_prompt = assembler.assemble(spec)
+
+    assert "【本章主题】" in user_prompt
+    assert "家运将衰" in user_prompt
+    assert "宝黛情深而前景未明" in user_prompt
+
+
+def test_user_prompt_contains_chapter_organization_block(tmp_path, monkeypatch):
+    style_kb = make_kb(tmp_path, monkeypatch)
+    char_kb = CharacterKnowledgeBase()
+    assembler = ContextAssembler(style_kb, char_kb)
+
+    spec = SceneSpec(
+        chapter_num=81,
+        characters=["贾宝玉", "林黛玉", "王熙凤"],
+        scene_description="家宴之后宝黛再会，外头忽有急信",
+        emotional_tone="哀愁",
+    )
+    _, user_prompt = assembler.assemble(spec)
+
+    assert "【本章章法】" in user_prompt
+    assert "先写秋意与家势" in user_prompt
+    assert "再入人物情事" in user_prompt
+    assert "末段须以外部消息或动静收束" in user_prompt
+
+
+def test_user_prompt_limits_dialogue_density(tmp_path, monkeypatch):
+    style_kb = make_kb(tmp_path, monkeypatch)
+    char_kb = CharacterKnowledgeBase()
+    assembler = ContextAssembler(style_kb, char_kb)
+
+    spec = SceneSpec(
+        chapter_num=81,
+        characters=["贾宝玉", "林黛玉", "薛宝钗"],
+        scene_description="众人小宴后各怀心事",
+        emotional_tone="哀愁",
+    )
+    _, user_prompt = assembler.assemble(spec)
+
+    assert "叙述须多于对话" in user_prompt
+    assert "不得连缀成长段轮番答话" in user_prompt
+    assert "每段对话都须承担" in user_prompt

@@ -6,6 +6,20 @@ from src.knowledge.character_kb import CharacterKnowledgeBase
 from src.knowledge.style_kb import StyleKnowledgeBase
 
 FORBIDDEN_WORDS = "高兴、开心、没事、感觉、其实、然后、所以、但是（改用‘却’）、好的、搞定、不错"
+DEFAULT_CHAPTER_THEMES = [
+    "家运将衰",
+    "宝黛情深而前景未明",
+]
+DEFAULT_CHAPTER_ORGANIZATION = [
+    "先写秋意与家势",
+    "再入人物情事",
+    "末段须以外部消息或动静收束",
+]
+DIALOGUE_DENSITY_GUIDANCE = [
+    "叙述须多于对话",
+    "不得连缀成长段轮番答话",
+    "每段对话都须承担人物推进、情绪转折或情节递进之用",
+]
 
 
 @dataclass
@@ -91,6 +105,10 @@ class ContextAssembler:
         if character_lines:
             parts += ["【本章人物状态】"] + character_lines + [""]
 
+        parts += ["【本章主题】", *self._build_theme_lines(spec), ""]
+        parts += ["【本章章法】", *self._build_structure_lines(spec), ""]
+        parts += ["【叙述约束】", *self._build_narration_constraints(), ""]
+
         if spec.foreshadowing_must_payoff:
             parts.append("【本章伏笔指令】")
             parts.append("必须兑现：")
@@ -123,6 +141,32 @@ class ContextAssembler:
             "5. 不得出现现代口语、解释腔和网文化抒情。",
         ]
         return "\n".join(parts)
+
+    def _build_theme_lines(self, spec: SceneSpec) -> List[str]:
+        lines = [
+            "- 家运将衰：须写出贾府表面如常、内里吃紧的气象。",
+            "- 宝黛情深而前景未明：须写出二人相知愈深，却更觉世事难凭。",
+        ]
+        if spec.foreshadowing_should_plant:
+            lines.extend(f"- 伏脉关联：{item}" for item in spec.foreshadowing_should_plant)
+        return lines
+
+    def _build_structure_lines(self, spec: SceneSpec) -> List[str]:
+        del spec
+        return [
+            "- 先写秋意与家势，以景与人心相映，点出衰飒之感。",
+            "- 再入人物情事，以叙述、动作、神色、停顿承托情绪，不可径以长对答铺写。",
+            "- 若写多人同席或同场，不得连缀成长段轮番答话，须使场面服务于家势与情势。",
+            "- 末段须以外部消息或动静收束，使下回有可接之变。",
+        ]
+
+    def _build_narration_constraints(self) -> List[str]:
+        return [
+            "- 叙述须多于对话，景物、动作、神情、心事要成为主要承载。",
+            "- 对话不可接连数段铺陈，尤不可只图热闹。",
+            "- 每段对话都须承担推进情意、显出家势、或引出后变三者之一。",
+            "- 章中须反复回扣秋意、衰象、隐忧，不可写散。",
+        ]
 
     def _build_character_constraints(self, characters: List[str]) -> List[str]:
         lines: List[str] = []

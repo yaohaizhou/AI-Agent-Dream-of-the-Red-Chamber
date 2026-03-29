@@ -67,6 +67,8 @@ def save_output(text: str, result) -> Path:
             f"style_score={result.style_score}",
             f"voice_score={result.voice_score}",
             f"foreshadowing_score={result.foreshadowing_score}",
+            f"dialogue_balance_score={result.dialogue_balance_score}",
+            f"theme_focus_score={result.theme_focus_score}",
             f"passed={result.passed}",
             f"feedback={result.feedback}",
         ]),
@@ -119,6 +121,8 @@ async def main(hint: str) -> int:
     print(f"🪞 风格分: {result.style_score:.2f}")
     print(f"🗣️ 人声分: {result.voice_score:.2f}")
     print(f"🔮 伏笔分: {result.foreshadowing_score:.2f}")
+    print(f"🗨️ 对话平衡分: {result.dialogue_balance_score:.2f}")
+    print(f"🎯 主题聚拢分: {result.theme_focus_score:.2f}")
     print(f"✅ 是否通过: {'是' if result.passed else '否'}")
     print(f"💬 反馈: {result.feedback}")
     return 0
