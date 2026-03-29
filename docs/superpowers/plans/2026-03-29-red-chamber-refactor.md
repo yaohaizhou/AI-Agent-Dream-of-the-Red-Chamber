@@ -1506,7 +1506,7 @@ git commit -m "feat: Phase 1 complete - run_ch81.py end-to-end generation with R
 **Files:**
 - Create: `src/story/state_schema.py`
 
-- [ ] **Step 1: 写失败测试**
+- [x] **Step 1: 写失败测试**
 
 `tests/story/__init__.py`（空文件，先创建目录）:
 
@@ -1701,7 +1701,7 @@ def test_update_keeps_recent_tone_streak_max_3():
     assert state.narrative_pacing.recent_tone_streak[-1].tone == "过渡"
 ```
 
-- [ ] **Step 2: 运行测试，确认报 ImportError（预期失败）**
+- [x] **Step 2: 运行测试，确认报 ImportError（预期失败）**
 
 ```bash
 cd /path/to/worktree  # 在 worktree 目录下运行
@@ -1710,7 +1710,7 @@ python3 -m pytest tests/story/test_story_state.py -v 2>&1 | head -15
 
 Expected: `ModuleNotFoundError: No module named 'src.story.state_schema'`
 
-- [ ] **Step 3: 创建 `src/story/state_schema.py`**
+- [x] **Step 3: 创建 `src/story/state_schema.py`**
 
 ```python
 """五层故事状态机的数据结构定义。"""
@@ -1769,7 +1769,7 @@ class ForeshadowingDebt:
     status: str             # pending | hinting | resolved
 ```
 
-- [ ] **Step 4: Commit schema**
+- [x] **Step 4: Commit schema**
 
 ```bash
 git add src/story/state_schema.py tests/story/__init__.py tests/story/test_story_state.py
@@ -1783,7 +1783,7 @@ git commit -m "feat: add state_schema.py with 5-layer dataclasses + failing test
 **Files:**
 - Create: `src/story/story_state.py`
 
-- [ ] **Step 1: 实现 `src/story/story_state.py`**
+- [x] **Step 1: 实现 `src/story/story_state.py`**
 
 ```python
 """StoryState：五层故事状态机，跨章节共享语境。"""
@@ -2026,7 +2026,7 @@ def _from_dict(data: dict) -> StoryState:
     return state
 ```
 
-- [ ] **Step 2: 运行测试，确认全部通过**
+- [x] **Step 2: 运行测试，确认全部通过**
 
 ```bash
 python3 -m pytest tests/story/test_story_state.py -v
@@ -2042,7 +2042,7 @@ python3 -m pytest tests/story/test_story_state.py -v -k "not update"
 
 Expected: 10 passed
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add src/story/story_state.py
@@ -2058,7 +2058,7 @@ git commit -m "feat: add StoryState with 5-layer schema, to_scene_hints, save/lo
 - Create: `tests/story/test_prophecy_analyst.py`
 - Create: `data/knowledge_base/prophecies/canonical.json`
 
-- [ ] **Step 1: 创建十二钗判词数据**
+- [x] **Step 1: 创建十二钗判词数据**
 
 `data/knowledge_base/prophecies/canonical.json`:
 
@@ -2102,7 +2102,7 @@ git commit -m "feat: add StoryState with 5-layer schema, to_scene_hints, save/lo
 ]
 ```
 
-- [ ] **Step 2: 写失败测试**
+- [x] **Step 2: 写失败测试**
 
 `tests/story/test_prophecy_analyst.py`:
 
@@ -2224,7 +2224,7 @@ def test_full_pipeline_update_from_analysis():
     assert state.current_chapter == 86
 ```
 
-- [ ] **Step 3: 运行测试，确认失败**
+- [x] **Step 3: 运行测试，确认失败**
 
 ```bash
 python3 -m pytest tests/story/test_prophecy_analyst.py -v 2>&1 | head -10
@@ -2232,7 +2232,7 @@ python3 -m pytest tests/story/test_prophecy_analyst.py -v 2>&1 | head -10
 
 Expected: `ModuleNotFoundError: No module named 'src.story.prophecy_analyst'`
 
-- [ ] **Step 4: 实现 `src/story/prophecy_analyst.py`**
+- [x] **Step 4: 实现 `src/story/prophecy_analyst.py`**
 
 ```python
 """ProphecyAnalyst：章节生成后自动分析文本，更新 StoryState 的五层状态。"""
@@ -2329,7 +2329,7 @@ class ProphecyAnalyst:
         return "过渡"
 ```
 
-- [ ] **Step 5: 运行全部 story 测试，确认通过**
+- [x] **Step 5: 运行全部 story 测试，确认通过**
 
 ```bash
 python3 -m pytest tests/story/ -v
@@ -2337,7 +2337,7 @@ python3 -m pytest tests/story/ -v
 
 Expected: 22 passed（含 `test_story_state.py` 13 个 + `test_prophecy_analyst.py` 9 个）
 
-- [ ] **Step 6: 运行 `test_story_state.py` 中之前跳过的 `update_*` 测试**
+- [x] **Step 6: 运行 `test_story_state.py` 中之前跳过的 `update_*` 测试**
 
 ```bash
 python3 -m pytest tests/story/test_story_state.py -v -k "update"
@@ -2345,7 +2345,7 @@ python3 -m pytest tests/story/test_story_state.py -v -k "update"
 
 Expected: 3 passed
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add src/story/prophecy_analyst.py \
