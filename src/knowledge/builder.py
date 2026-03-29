@@ -22,7 +22,7 @@ SHORT_NAME_MAP = {
 }
 
 CHAPTER_HEADER = re.compile(r"^###\s+第([一二三四五六七八九十百]+)回")
-DIALOGUE_PATTERN = re.compile(r"[\u4e00-\u9fff]{1,4}[笑冷忙低嗔含微轻忽突]?道[：:]?[\"\"「『]")
+DIALOGUE_PATTERN = re.compile(r"(?:[\u4e00-\u9fff]{1,4}[笑冷忙低嗔含微轻忽突]?道|问|答)[：:]?[“\"「『]")
 INNER_THOUGHT = re.compile(r"(心中|心下|心里|想道|暗想|自思|不觉|不禁|只见|但见)")
 SCENERY_KEYWORDS = ["日", "月", "风", "雨", "雪", "花", "树", "山", "水", "云", "天", "园", "院", "景"]
 POETRY_MARKERS = re.compile(r"(判词|词曰|诗云|赋曰|歌云|曲子|题曰|其词|其判)")
