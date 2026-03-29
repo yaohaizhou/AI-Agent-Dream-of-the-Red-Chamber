@@ -109,18 +109,19 @@ class TestCharacterConsistency:
     def checker(self):
         return CharacterConsistencyChecker()
     
-    @pytest.mark.asyncio
-    async def test_consistency_check_sync(self, checker):
-        """测试人物一致性检查器"""
+    def test_consistency_check_sync(self, checker):
+        """同步测试人物一致性检查器"""
         content = """
         宝玉对黛玉道：'好妹妹，你今日诗做得如何？'
         黛玉笑道：'不过是随感而发，有什么好不好。'
         """
-        result = await checker.check_consistency(
+        # 由于 _check_consistency_sync 不存在，改为在事件循环中运行异步方法
+        import asyncio
+        result = asyncio.run(checker.check_consistency(
             content,
             ['宝玉', '黛玉'],
             threshold=0.5
-        )
+        ))
         assert 'overall_score' in result
         assert 'individual_results' in result
 
