@@ -4,6 +4,7 @@ from typing import List, Optional
 import hashlib
 import torch
 import chromadb
+from chromadb.api.client import SharedSystemClient
 
 
 @dataclass
@@ -19,9 +20,16 @@ class StyleChunk:
 class StyleKnowledgeBase:
     """原著风格段落的向量知识库。"""
 
-    def __init__(self, persist_dir: str = "data/knowledge_base/style"):
+    def __init__(
+        self,
+        persist_dir: str = "data/knowledge_base/style",
+        device: Optional[str] = None,
+        encode_batch_size: int = 8,
+    ):
         self._model = None
         self.persist_dir = persist_dir
+        self.device = device
+        self.encode_batch_size = encode_batch_size
         self.client = chromadb.PersistentClient(path=persist_dir)
         self.collection = self.client.get_or_create_collection(
             name="style_chunks",
@@ -32,15 +40,28 @@ class StyleKnowledgeBase:
     def model(self):
         if self._model is None:
             from sentence_transformers import SentenceTransformer
-            device = "mps" if torch.backends.mps.is_available() else "cpu"
+            device = self.device or ("mps" if torch.backends.mps.is_available() else "cpu")
             self._model = SentenceTransformer("BAAI/bge-m3", device=device)
         return self._model
+
+    def close(self) -> None:
+        self.client.close()
+        SharedSystemClient.clear_system_cache()
+        self._model = None
 
     def add_chunks(self, chunks: List[StyleChunk]) -> None:
         if not chunks:
             return
         texts = [c.text for c in chunks]
-        embeddings = self.model.encode(texts, normalize_embeddings=True).tolist()
+        try:
+            embeddings = self.model.encode(
+                texts,
+                normalize_embeddings=True,
+                batch_size=min(self.encode_batch_size, len(texts)),
+                show_progress_bar=False,
+            ).tolist()
+        except TypeError:
+            embeddings = self.model.encode(texts, normalize_embeddings=True).tolist()
         ids = [
             f"ch{c.chapter_num}_{hashlib.sha256(c.text.encode()).hexdigest()[:12]}"
             for c in chunks

@@ -4,12 +4,16 @@
 构建完成后，data/knowledge_base/style/ 即可用于 RAG 检索。
 """
 from __future__ import annotations
+import gc
 import re
 import json
+import shutil
+import tempfile
 from pathlib import Path
 from typing import List, Tuple
 
 from src.knowledge.style_kb import StyleKnowledgeBase, StyleChunk
+from src.knowledge.character_kb import build_character_kb
 
 MAIN_CHARACTERS = [
     "林黛玉", "贾宝玉", "薛宝钗", "王熙凤", "贾母",
@@ -26,6 +30,9 @@ DIALOGUE_PATTERN = re.compile(r"(?:[\u4e00-\u9fff]{1,4}[笑冷忙低嗔含微轻
 INNER_THOUGHT = re.compile(r"(心中|心下|心里|想道|暗想|自思|不觉|不禁|只见|但见)")
 SCENERY_KEYWORDS = ["日", "月", "风", "雨", "雪", "花", "树", "山", "水", "云", "天", "园", "院", "景"]
 POETRY_MARKERS = re.compile(r"(判词|词曰|诗云|赋曰|歌云|曲子|题曰|其词|其判)")
+BUILD_BATCH_SIZE = 8
+BUILD_DEVICE = "cpu"
+BUILD_ENCODE_BATCH_SIZE = 2
 
 
 def _classify(text: str) -> str:
@@ -54,7 +61,6 @@ def _extract_characters(text: str) -> List[str]:
 
 def _split_chapter(raw: str) -> List[str]:
     """将章节原文切分为 100-450 字的段落块。"""
-    # 先按换行分段
     paras = [p.strip() for p in raw.split("\n") if len(p.strip()) > 30]
     chunks = []
     buf = ""
@@ -83,7 +89,6 @@ def parse_original(filepath: str) -> List[Tuple[int, List[str]]]:
             if current_num > 0 and current_lines:
                 chapters.append((current_num, _split_chapter("\n".join(current_lines))))
             current_lines = []
-            # 将中文数字章节号转换为阿拉伯数字
             current_num = _cn_to_int(m.group(1))
         elif line.strip() == "----":
             continue
@@ -122,33 +127,61 @@ def build_style_kb(
     chapters = parse_original(source)
     print(f"   共解析 {len(chapters)} 回，开始向量化...")
 
-    kb = StyleKnowledgeBase(persist_dir=persist_dir)
+    persist_path = Path(persist_dir)
+    build_path = Path(
+        tempfile.mkdtemp(
+            prefix=f"{persist_path.name}.building.",
+            dir=str(persist_path.parent),
+        )
+    )
 
-    if kb.count() > 0:
-        print(f"   知识库已存在 {kb.count()} 条记录，跳过重建。")
-        print("   如需重建，请删除 data/knowledge_base/style/ 目录后重新运行。")
-        return kb
+    kb = StyleKnowledgeBase(
+        persist_dir=str(build_path),
+        device=BUILD_DEVICE,
+        encode_batch_size=BUILD_ENCODE_BATCH_SIZE,
+    )
+    total_chunks = sum(len(texts) for _, texts in chapters)
+    print(f"   共 {total_chunks} 个段落块，按批次写入 ChromaDB...")
 
-    all_chunks: List[StyleChunk] = []
+    processed = 0
+    batch: List[StyleChunk] = []
     for chapter_num, texts in chapters:
         for text in texts:
-            chunk = StyleChunk(
-                text=text,
-                chapter_num=chapter_num,
-                paragraph_type=_classify(text),
-                characters_present=_extract_characters(text),
+            batch.append(
+                StyleChunk(
+                    text=text,
+                    chapter_num=chapter_num,
+                    paragraph_type=_classify(text),
+                    characters_present=_extract_characters(text),
+                )
             )
-            all_chunks.append(chunk)
+            if len(batch) >= BUILD_BATCH_SIZE:
+                kb.add_chunks(batch)
+                processed += len(batch)
+                print(f"   进度: {processed}/{total_chunks}", end="\r")
+                batch.clear()
+                gc.collect()
 
-    print(f"   共 {len(all_chunks)} 个段落块，按批次写入 ChromaDB...")
-    BATCH = 64
-    for i in range(0, len(all_chunks), BATCH):
-        batch = all_chunks[i : i + BATCH]
+    if batch:
         kb.add_chunks(batch)
-        print(f"   进度: {min(i + BATCH, len(all_chunks))}/{len(all_chunks)}", end="\r")
+        processed += len(batch)
+        print(f"   进度: {processed}/{total_chunks}", end="\r")
+        batch.clear()
+        gc.collect()
 
-    print(f"\n✅ 风格层知识库构建完成，共 {kb.count()} 条。")
-    return kb
+    built_count = kb.count()
+    kb.close()
+
+    if persist_path.exists():
+        shutil.rmtree(persist_path)
+    build_path.replace(persist_path)
+
+    print(f"\n✅ 风格层知识库构建完成，共 {built_count} 条。")
+    build_character_kb(
+        source=source,
+        persist_path=str(persist_path.parent / "characters" / "canonical.json"),
+    )
+    return StyleKnowledgeBase(persist_dir=str(persist_path), device=BUILD_DEVICE)
 
 
 if __name__ == "__main__":
